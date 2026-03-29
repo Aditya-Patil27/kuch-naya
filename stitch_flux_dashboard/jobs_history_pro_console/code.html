@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EMPIRICAL_COMMAND // Job Queue</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;700&amp;family=Inter:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-tint": "#8ff5ff",
+                        "outline": "#70767f",
+                        "surface-variant": "#1e2731",
+                        "on-primary-container": "#005359",
+                        "surface-container-low": "#0d141c",
+                        "on-error-container": "#ffa8a3",
+                        "on-secondary-fixed": "#002691",
+                        "secondary": "#8197ff",
+                        "surface-container-highest": "#1e2731",
+                        "on-error": "#490006",
+                        "background": "#080f16",
+                        "tertiary-fixed-dim": "#ff7984",
+                        "surface-dim": "#080f16",
+                        "surface": "#080f16",
+                        "secondary-container": "#124af0",
+                        "on-secondary-fixed-variant": "#003cd6",
+                        "primary-fixed": "#00eefc",
+                        "surface-container-high": "#18202a",
+                        "secondary-dim": "#3e65ff",
+                        "on-primary-fixed": "#003f43",
+                        "error-container": "#9f0519",
+                        "on-background": "#ebf1fb",
+                        "on-primary-fixed-variant": "#005e64",
+                        "on-tertiary-fixed-variant": "#78001f",
+                        "error": "#ff716c",
+                        "primary-dim": "#00deec",
+                        "primary-fixed-dim": "#00deec",
+                        "tertiary-fixed": "#ff9198",
+                        "on-secondary-container": "#f9f6ff",
+                        "error-dim": "#d7383b",
+                        "primary": "#8ff5ff",
+                        "on-secondary": "#001661",
+                        "surface-bright": "#232d38",
+                        "on-surface": "#ebf1fb",
+                        "inverse-primary": "#006a71",
+                        "primary-container": "#00eefc",
+                        "inverse-on-surface": "#4f565e",
+                        "on-surface-variant": "#a5abb5",
+                        "tertiary-dim": "#e80044",
+                        "tertiary-container": "#ff084d",
+                        "tertiary": "#ff6f7c",
+                        "on-tertiary-container": "#000000",
+                        "surface-container": "#131a23",
+                        "on-tertiary-fixed": "#39000a",
+                        "on-tertiary": "#49000f",
+                        "surface-container-lowest": "#000000",
+                        "secondary-fixed": "#c7cfff",
+                        "secondary-fixed-dim": "#b5c0ff",
+                        "on-primary": "#005d63",
+                        "inverse-surface": "#f8f9ff",
+                        "outline-variant": "#424851"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Inter"],
+                        "label": ["Space Grotesk"],
+                        "mono": ["JetBrains Mono"]
+                    },
+                    borderRadius: { "DEFAULT": "0px", "lg": "0px", "xl": "0px", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(143, 245, 255, 0.15);
+        }
+        .isometric-card {
+            transform: perspective(1000px) rotateX(2deg);
+            transition: transform 0.3s ease;
+        }
+        .isometric-card:hover {
+            transform: perspective(1000px) rotateX(0deg) translateY(-4px);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary selection:text-on-primary">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center px-6 h-14 w-full z-50 bg-[#080f16] shadow-[0_4px_24px_-4px_rgba(0,0,0,0.8)] fixed top-0 left-0">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black tracking-tighter text-[#00f0ff] font-['Space_Grotesk'] uppercase">EMPIRICAL_COMMAND</span>
+<div class="hidden md:flex gap-6 font-['Space_Grotesk'] tracking-tight uppercase text-xs">
+<a class="text-slate-500 hover:bg-[#232d38] transition-colors duration-150 px-2 py-1" href="#">Nodes</a>
+<a class="text-[#00f0ff] border-b-2 border-[#00f0ff] pb-1 px-2 py-1" href="#">Pipelines</a>
+<a class="text-slate-500 hover:bg-[#232d38] transition-colors duration-150 px-2 py-1" href="#">Logs</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative flex items-center bg-[#18202a] px-3 py-1">
+<span class="material-symbols-outlined text-sm text-[#00f0ff] mr-2">terminal</span>
+<input class="bg-transparent border-none focus:ring-0 text-xs font-mono w-48 text-[#00f0ff]" placeholder="EXECUTE_COMMAND..." type="text"/>
+</div>
+<div class="flex gap-2">
+<button class="p-2 text-slate-500 hover:bg-[#232d38] transition-all active:scale-90">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-[#232d38] transition-all active:scale-90">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+<div class="w-8 h-8 bg-surface-variant border border-outline-variant overflow-hidden">
+<img alt="Operator Profile" data-alt="Close-up of a high-tech biometric identification photo with glowing cyan interface elements overlaying a professional portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA3eZlEZBlD-AOJ_yCMyQnfWtA4XeCFH4LTX2yJ3J37uKBfpPbg1MSJABEiAkxvmFGHsedFiX6JEImuDxhoMp8vqwIVnJIDxDqr6hYaKtI4n3XRDypazjWntGuMT2i17cXtqyQax1VwUJhpCGqJ7yTEfOFZ3_yr0wLLSvCAny_qjVBlqhj8KOfgL93evqkZfkPz1vgWQWTfShsOklnxrdfalCImqq27Moo2MEU3_q_F9KDtc2s5r5gr86Hd7KeRJ-zJfuq0fTcdajxq"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar (Desktop) -->
+<aside class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-14 bg-[#080f16] py-4 font-['JetBrains_Mono'] text-xs z-40 border-r border-outline-variant/10">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 mb-1">
+<div class="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_#8ff5ff]"></div>
+<span class="text-[#00f0ff] font-bold">NODE_01</span>
+</div>
+<div class="text-slate-500 opacity-70">STABLE // OPS</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-4 px-6 py-3 bg-[#18202a] text-[#00f0ff] border-r-2 border-[#00f0ff] group transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-lg">lan</span>
+<span>Nodes</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-slate-400 opacity-70 hover:bg-[#232d38] hover:opacity-100 group transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-lg">alt_route</span>
+<span>Pipelines</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-slate-400 opacity-70 hover:bg-[#232d38] hover:opacity-100 group transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-lg">subject</span>
+<span>Logs</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-slate-400 opacity-70 hover:bg-[#232d38] hover:opacity-100 group transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-lg">analytics</span>
+<span>Metrics</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-slate-400 opacity-70 hover:bg-[#232d38] hover:opacity-100 group transition-all duration-200" href="#">
+<span class="material-symbols-outlined text-lg">rebase_edit</span>
+<span>Chaos</span>
+</a>
+</nav>
+<div class="px-6 mt-auto">
+<button class="w-full py-3 bg-primary text-on-primary font-bold uppercase tracking-widest hover:shadow-[0_0_15px_rgba(143,245,255,0.4)] transition-all active:scale-95 mb-6">
+                DEPLOY_PULSE
+            </button>
+<div class="space-y-2 pb-10">
+<a class="flex items-center gap-4 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span>
+<span>Docs</span>
+</a>
+<a class="flex items-center gap-4 text-slate-500 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">contact_support</span>
+<span>Support</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="md:ml-64 pt-20 px-6 pb-12 min-h-screen">
+<!-- Header & Filters -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-4">
+<div>
+<p class="font-mono text-[10px] text-primary tracking-[0.3em] mb-1 uppercase">SYSTEM // EXECUTION_QUEUE</p>
+<h1 class="font-headline text-4xl font-bold tracking-tight text-on-surface">Job Queue &amp; History</h1>
+</div>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-1.5 bg-primary text-on-primary font-headline text-xs font-bold uppercase tracking-wider">ALL</button>
+<button class="px-4 py-1.5 bg-surface-container-high text-on-surface hover:bg-surface-bright font-headline text-xs font-bold uppercase tracking-wider border border-outline-variant/20">ACTIVE</button>
+<button class="px-4 py-1.5 bg-surface-container-high text-on-surface hover:bg-surface-bright font-headline text-xs font-bold uppercase tracking-wider border border-outline-variant/20">COMPLETED</button>
+<button class="px-4 py-1.5 bg-surface-container-high text-on-surface hover:bg-surface-bright font-headline text-xs font-bold uppercase tracking-wider border border-outline-variant/20">FAILED</button>
+<button class="px-4 py-1.5 bg-surface-container-high text-on-surface hover:bg-surface-bright font-headline text-xs font-bold uppercase tracking-wider border border-outline-variant/20">BLOCKED</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+<!-- Main Work Area -->
+<div class="lg:col-span-3 space-y-8">
+<!-- Active Jobs Section -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<span class="w-1 h-6 bg-primary"></span>
+<h2 class="font-headline text-lg font-bold uppercase tracking-tighter">Active Jobs (3)</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<!-- Active Job Card 1 -->
+<div class="isometric-card glass-panel bg-surface-container-high p-4 flex flex-col gap-4 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-primary animate-spin" style="animation-duration: 3s;">settings_backup_restore</span>
+</div>
+<div class="flex justify-between items-start">
+<div>
+<p class="font-mono text-[10px] text-primary">JOB_ID: #8821-X</p>
+<h3 class="font-headline font-bold text-sm">main-deploy-worker</h3>
+</div>
+<span class="text-[10px] font-mono bg-primary/10 text-primary px-2 py-0.5 border border-primary/30">72%</span>
+</div>
+<div class="h-32 w-full bg-surface-container-lowest overflow-hidden border border-outline-variant/10">
+<img class="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" data-alt="Isometric 3D block visualization of a software deployment pipeline with glowing cyan nodes representing processing stages from source to production" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcc93WY-oOhE3LWzNavVq0hiulLaS-hUJUoH_0c5wKwYrfRyuzaxJ7pT8IU-08a7w6lwNco5L-KyiS4dzrgV-Z4h0z3Cq0PTCS7D-q254CuxJm8zaPEgma_aZ4XkmLildG1_8SpOBDHNW196vK4wW9Au-gPaWFO14jW9H-SUayUe3RIsqQZPkCYP1IxnXoPMBD9gxzaQsklfXgEaphlB34UAPIvenLutje0FLS3qs0gULWAXD5ipggQDQQZV6WJillmNojEO07pFqY"/>
+</div>
+<div class="flex justify-between items-center mt-2">
+<div class="flex -space-x-1">
+<div class="w-2 h-2 bg-primary"></div>
+<div class="w-2 h-2 bg-primary"></div>
+<div class="w-2 h-2 bg-primary"></div>
+<div class="w-2 h-2 bg-surface-variant"></div>
+</div>
+<span class="font-mono text-[9px] text-on-surface-variant">ETA: 01:42</span>
+</div>
+</div>
+<!-- Active Job Card 2 -->
+<div class="isometric-card glass-panel bg-surface-container-high p-4 flex flex-col gap-4 relative overflow-hidden group">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-mono text-[10px] text-primary">JOB_ID: #8822-Y</p>
+<h3 class="font-headline font-bold text-sm">api-refactor-lint</h3>
+</div>
+<span class="text-[10px] font-mono bg-primary/10 text-primary px-2 py-0.5 border border-primary/30">14%</span>
+</div>
+<div class="h-32 w-full bg-surface-container-lowest overflow-hidden border border-outline-variant/10">
+<img class="w-full h-full object-cover grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500" data-alt="3D isometric technical rendering of pipeline stages with translucent teal blocks connected by light-emitting fiber optic data lines" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvAyKCVAH3Z7UW1LH4OsYNfvIJvObo2bLTLLRswFPZXPtIIHij0MeAcvUYV5VxVromO7o3r9-kz5ftAdkMfEfi-uYgok8g64ytD22KTxnpaAx-iPP8l_LXHmZQgSOTqJfgSyD80snUT0MSbDZbfLWOGbYQyi7LATw7HzwEscNosZX9AkSxnvgQOXDDpxGz9WUXnx--pkODYDY6h6lto4wBcKtakgq8ll-8pie4JQMebaXmzqNMou2V3l9_DASMMy8RWqEirH9szUpu"/>
+</div>
+<div class="flex justify-between items-center mt-2">
+<div class="flex -space-x-1">
+<div class="w-2 h-2 bg-primary"></div>
+<div class="w-2 h-2 bg-surface-variant"></div>
+<div class="w-2 h-2 bg-surface-variant"></div>
+<div class="w-2 h-2 bg-surface-variant"></div>
+</div>
+<span class="font-mono text-[9px] text-on-surface-variant">ETA: 08:12</span>
+</div>
+</div>
+<!-- Active Job Card 3 -->
+<div class="isometric-card glass-panel bg-surface-container-high p-4 flex flex-col gap-4 relative overflow-hidden group">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-mono text-[10px] text-primary">JOB_ID: #8825-Z</p>
+<h3 class="font-headline font-bold text-sm">db-migration-v4</h3>
+</div>
+<span class="text-[10px] font-mono bg-tertiary-container text-on-tertiary-container px-2 py-0.5">PENDING</span>
+</div>
+<div class="h-32 w-full bg-surface-container-lowest overflow-hidden border border-outline-variant/10">
+<img class="w-full h-full object-cover grayscale opacity-20" data-alt="Technical architectural diagram showing sequential data blocks in a 3D isometric perspective, muted colors with sharp edges" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfpE_AnaI6AmLANope-3XmFjNaIIW87mp-K-BNo9wuko_G6HLELBvsDEzhkwflydouCWXyShNij85y6vkCfoTFv777umINJ_BEFUUYZ7cjbXbDCS1M0y5w5cEi2rvLFKkYDY5j4tH9ENCL5_XUUuX5n-7KOowH9po3vPfbjKNs7LgvRcHCofEPxcSI5EGlmeW3dA3pzq535o2yIfTUWJvC_pTS9lwbNsgAO1kYeiPpfGN7fr58hG1y8Op5-a8fEfFWfjEMUvMFAHB8"/>
+</div>
+<div class="flex justify-between items-center mt-2">
+<div class="flex -space-x-1">
+<div class="w-2 h-2 bg-surface-variant"></div>
+<div class="w-2 h-2 bg-surface-variant"></div>
+<div class="w-2 h-2 bg-surface-variant"></div>
+<div class="w-2 h-2 bg-surface-variant"></div>
+</div>
+<span class="font-mono text-[9px] text-on-surface-variant">WAITING...</span>
+</div>
+</div>
+</div>
+</section>
+<!-- History Section -->
+<section>
+<div class="flex items-center gap-3 mb-4">
+<span class="w-1 h-6 bg-primary"></span>
+<h2 class="font-headline text-lg font-bold uppercase tracking-tighter">Execution History</h2>
+</div>
+<div class="bg-surface-container-high border-t border-primary/20 overflow-x-auto">
+<table class="w-full border-collapse font-mono text-xs">
+<thead>
+<tr class="bg-surface-container-highest/50 text-left text-on-surface-variant border-b border-outline-variant/10">
+<th class="px-4 py-3 font-medium uppercase tracking-wider">Job ID</th>
+<th class="px-4 py-3 font-medium uppercase tracking-wider">PR</th>
+<th class="px-4 py-3 font-medium uppercase tracking-wider">Repo</th>
+<th class="px-4 py-3 font-medium uppercase tracking-wider">Verdict</th>
+<th class="px-4 py-3 font-medium uppercase tracking-wider">P99 Delta</th>
+<th class="px-4 py-3 font-medium uppercase tracking-wider">Duration</th>
+<th class="px-4 py-3 font-medium uppercase tracking-wider text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-4 py-4 text-primary font-bold">#8819-A</td>
+<td class="px-4 py-4 text-on-surface-variant">PR-1102</td>
+<td class="px-4 py-4">empirical-core</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold">SUCCESS</span>
+</td>
+<td class="px-4 py-4 text-slate-500">-12ms</td>
+<td class="px-4 py-4 text-slate-500">04:12s</td>
+<td class="px-4 py-4 text-right space-x-2">
+<button class="text-primary opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="text-slate-500 hover:text-primary"><span class="material-symbols-outlined text-sm">more_vert</span></button>
+</td>
+</tr>
+<tr class="bg-surface-container-low hover:bg-surface-bright transition-colors group">
+<td class="px-4 py-4 text-primary font-bold">#8818-B</td>
+<td class="px-4 py-4 text-on-surface-variant">PR-1098</td>
+<td class="px-4 py-4">empirical-ui</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold">FAILED</span>
+</td>
+<td class="px-4 py-4 text-error">+244ms</td>
+<td class="px-4 py-4 text-slate-500">01:05s</td>
+<td class="px-4 py-4 text-right space-x-2">
+<button class="text-primary opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="text-slate-500 hover:text-primary"><span class="material-symbols-outlined text-sm">more_vert</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-4 py-4 text-primary font-bold">#8817-C</td>
+<td class="px-4 py-4 text-on-surface-variant">PR-1085</td>
+<td class="px-4 py-4">empirical-core</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold">SUCCESS</span>
+</td>
+<td class="px-4 py-4 text-slate-500">-2ms</td>
+<td class="px-4 py-4 text-slate-500">03:45s</td>
+<td class="px-4 py-4 text-right space-x-2">
+<button class="text-primary opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="text-slate-500 hover:text-primary"><span class="material-symbols-outlined text-sm">more_vert</span></button>
+</td>
+</tr>
+<tr class="bg-surface-container-low hover:bg-surface-bright transition-colors group">
+<td class="px-4 py-4 text-primary font-bold">#8816-D</td>
+<td class="px-4 py-4 text-on-surface-variant">PR-1082</td>
+<td class="px-4 py-4">empirical-auth</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 bg-primary/10 text-primary border border-primary/20 text-[10px] font-bold">SUCCESS</span>
+</td>
+<td class="px-4 py-4 text-error">+82ms</td>
+<td class="px-4 py-4 text-slate-500">05:20s</td>
+<td class="px-4 py-4 text-right space-x-2">
+<button class="text-primary opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="text-slate-500 hover:text-primary"><span class="material-symbols-outlined text-sm">more_vert</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="px-4 py-4 text-primary font-bold">#8815-E</td>
+<td class="px-4 py-4 text-on-surface-variant">PR-1079</td>
+<td class="px-4 py-4">empirical-core</td>
+<td class="px-4 py-4">
+<span class="px-2 py-0.5 bg-outline text-on-surface text-[10px] font-bold">ABORTED</span>
+</td>
+<td class="px-4 py-4 text-slate-500">--</td>
+<td class="px-4 py-4 text-slate-500">00:12s</td>
+<td class="px-4 py-4 text-right space-x-2">
+<button class="text-primary opacity-0 group-hover:opacity-100 transition-opacity"><span class="material-symbols-outlined text-sm">visibility</span></button>
+<button class="text-slate-500 hover:text-primary"><span class="material-symbols-outlined text-sm">more_vert</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+<!-- Sidebar Quick Stats -->
+<aside class="space-y-6">
+<div class="glass-panel bg-surface-container-high p-6 border-l-4 border-primary">
+<h3 class="font-headline text-sm font-bold uppercase tracking-widest mb-6">Quick Stats (7d)</h3>
+<!-- Simplified Bar Chart -->
+<div class="space-y-4 mb-8">
+<div class="flex items-end justify-between h-24 gap-1">
+<div class="bg-primary/20 w-full h-1/2 hover:bg-primary transition-all"></div>
+<div class="bg-primary/20 w-full h-3/4 hover:bg-primary transition-all"></div>
+<div class="bg-primary/20 w-full h-1/3 hover:bg-primary transition-all"></div>
+<div class="bg-primary/20 w-full h-2/3 hover:bg-primary transition-all"></div>
+<div class="bg-primary/20 w-full h-full hover:bg-primary transition-all"></div>
+<div class="bg-primary/20 w-full h-1/2 hover:bg-primary transition-all"></div>
+<div class="bg-primary w-full h-2/3"></div>
+</div>
+<div class="flex justify-between text-[10px] font-mono text-slate-500 uppercase">
+<span>MON</span>
+<span>SUN</span>
+</div>
+</div>
+<!-- Trends -->
+<div class="space-y-4">
+<div class="bg-surface-container-lowest p-3 border-l-2 border-primary/30">
+<p class="text-[9px] font-mono text-slate-500 uppercase mb-1">Total Deployments</p>
+<div class="flex justify-between items-end">
+<span class="text-2xl font-mono font-bold">1,248</span>
+<span class="text-[10px] font-mono text-primary">+12.4%</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-3 border-l-2 border-error/30">
+<p class="text-[9px] font-mono text-slate-500 uppercase mb-1">N+1 Queries Detected</p>
+<div class="flex justify-between items-end">
+<span class="text-2xl font-mono font-bold text-error">42</span>
+<span class="text-[10px] font-mono text-error">CRITICAL</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-3 border-l-2 border-primary/30">
+<p class="text-[9px] font-mono text-slate-500 uppercase mb-1">Avg Success Rate</p>
+<div class="flex justify-between items-end">
+<span class="text-2xl font-mono font-bold">98.2%</span>
+<span class="text-[10px] font-mono text-primary">STABLE</span>
+</div>
+</div>
+</div>
+</div>
+<div class="glass-panel bg-[#18202a] p-6 relative overflow-hidden group">
+<div class="absolute -right-4 -bottom-4 opacity-5 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-8xl">analytics</span>
+</div>
+<h4 class="font-headline text-xs font-bold uppercase mb-2">Resource Pulse</h4>
+<p class="text-xs text-on-surface-variant font-mono mb-4">Worker nodes are currently at 84% capacity. Optimization recommended.</p>
+<button class="text-primary font-mono text-[10px] flex items-center gap-1 hover:gap-2 transition-all">
+                        RUN_SCALING_ANALYSIS <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</aside>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full h-16 bg-[#080f16] flex justify-around items-center px-4 z-50 border-t border-outline-variant/10">
+<a class="flex flex-col items-center text-[#00f0ff]" href="#">
+<span class="material-symbols-outlined">lan</span>
+<span class="text-[10px] font-mono">Nodes</span>
+</a>
+<a class="flex flex-col items-center text-slate-500" href="#">
+<span class="material-symbols-outlined">alt_route</span>
+<span class="text-[10px] font-mono">Pipelines</span>
+</a>
+<a class="flex flex-col items-center text-slate-500" href="#">
+<span class="material-symbols-outlined">subject</span>
+<span class="text-[10px] font-mono">Logs</span>
+</a>
+<a class="flex flex-col items-center text-slate-500" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="text-[10px] font-mono">Metrics</span>
+</a>
+</nav>
+</body></html>

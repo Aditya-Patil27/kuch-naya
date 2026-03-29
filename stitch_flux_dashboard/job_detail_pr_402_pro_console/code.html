@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FLUX AI CHAOS | Job Detail</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "on-secondary-fixed": "#1a1c1c",
+                        "secondary": "#c6c6c7",
+                        "on-secondary": "#2f3131",
+                        "outline-variant": "#3b494b",
+                        "on-primary-container": "#006970",
+                        "surface-dim": "#10141a",
+                        "surface-container-highest": "#31353c",
+                        "surface-container-high": "#262a31",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "primary-container": "#00f0ff",
+                        "surface-container": "#1c2026",
+                        "primary-fixed": "#7df4ff",
+                        "on-tertiary-container": "#5a5f67",
+                        "outline": "#849495",
+                        "surface-container-lowest": "#0a0e14",
+                        "primary-fixed-dim": "#00dbe9",
+                        "tertiary": "#f2f5ff",
+                        "tertiary-container": "#d5d9e3",
+                        "inverse-primary": "#006970",
+                        "secondary-container": "#454747",
+                        "background": "#10141a",
+                        "tertiary-fixed": "#dee2ec",
+                        "surface-tint": "#00dbe9",
+                        "on-primary-fixed-variant": "#004f54",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-secondary-container": "#b4b5b5",
+                        "surface-container-low": "#181c22",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed-dim": "#c2c7d0",
+                        "on-primary": "#00363a",
+                        "inverse-on-surface": "#2d3137",
+                        "surface-bright": "#353940",
+                        "error-container": "#93000a",
+                        "primary": "#dbfcff",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#171c23",
+                        "surface": "#10141a",
+                        "on-surface": "#dfe2eb",
+                        "on-tertiary-fixed-variant": "#42474f",
+                        "on-primary-fixed": "#002022",
+                        "inverse-surface": "#dfe2eb",
+                        "on-background": "#dfe2eb",
+                        "on-surface-variant": "#b9cacb",
+                        "on-secondary-fixed-variant": "#454747",
+                        "surface-variant": "#31353c",
+                        "on-tertiary": "#2c3138"
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Space Grotesk"],
+                        "label": ["Space Grotesk"],
+                        "mono": ["JetBrains Mono"]
+                    },
+                    borderRadius: { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" },
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .glass-card {
+            background: rgba(38, 42, 49, 0.6);
+            backdrop-filter: blur(20px);
+        }
+        .ghost-border {
+            border: 1px solid rgba(0, 219, 233, 0.15);
+        }
+        .hockey-stick-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 0;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#10141a] dark:bg-[#10141a] transition-all">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tighter text-[#dbfcff] font-['Space_Grotesk']">FLUX AI CHAOS</span>
+<div class="hidden md:flex gap-6 items-center">
+<a class="font-['Space_Grotesk'] tracking-tight text-sm uppercase text-[#c6c6c7] hover:text-[#dbfcff] transition-colors duration-200" href="#">Dashboard</a>
+<a class="font-['Space_Grotesk'] tracking-tight text-sm uppercase text-[#00f0ff] border-b-2 border-[#00f0ff] pb-1" href="#">Jobs</a>
+<a class="font-['Space_Grotesk'] tracking-tight text-sm uppercase text-[#c6c6c7] hover:text-[#dbfcff] transition-colors duration-200" href="#">History</a>
+<a class="font-['Space_Grotesk'] tracking-tight text-sm uppercase text-[#c6c6c7] hover:text-[#dbfcff] transition-colors duration-200" href="#">Settings</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-secondary hover:bg-[#1c2026] p-2 rounded transition-colors" data-icon="notifications">notifications</button>
+<button class="material-symbols-outlined text-secondary hover:bg-[#1c2026] p-2 rounded transition-colors" data-icon="account_circle">account_circle</button>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] z-40 flex flex-col p-4 bg-[#181c22]/60 backdrop-blur-xl w-64 border-r border-[#00f0ff]/10 shadow-[0_0_32px_rgba(0,219,233,0.08)]">
+<div class="mb-8 px-2">
+<h2 class="font-['JetBrains_Mono'] text-xs uppercase tracking-widest text-[#00f0ff]">System Node</h2>
+<p class="text-[10px] text-secondary/60 font-mono">Active_Operator_01</p>
+</div>
+<div class="flex-1 space-y-2">
+<button class="w-full flex items-center gap-3 px-3 py-2 text-xs font-mono uppercase tracking-widest text-secondary opacity-70 hover:bg-[#1c2026] hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="analytics">analytics</span>
+                Operator Status
+            </button>
+<button class="w-full flex items-center gap-3 px-3 py-2 text-xs font-mono uppercase tracking-widest text-secondary opacity-70 hover:bg-[#1c2026] hover:opacity-100 transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="description">description</span>
+                Documentation
+            </button>
+</div>
+<div class="mt-auto pt-4 border-t border-outline-variant/20 space-y-2">
+<button class="w-full bg-gradient-to-br from-primary-fixed to-primary-container text-on-primary py-2 text-xs font-bold uppercase tracking-tighter mb-4 active:scale-95 transition-transform">Deploy Patch</button>
+<button class="w-full flex items-center gap-3 px-3 py-2 text-xs font-mono uppercase tracking-widest text-secondary opacity-70 hover:bg-[#1c2026] transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="help_outline">help_outline</span>
+                Support
+            </button>
+<button class="w-full flex items-center gap-3 px-3 py-2 text-xs font-mono uppercase tracking-widest text-secondary opacity-70 hover:bg-[#1c2026] transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="terminal">terminal</span>
+                Logs
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 p-8 min-h-screen">
+<!-- Header Section -->
+<header class="mb-10 flex items-start justify-between">
+<div class="flex flex-col gap-4">
+<a class="flex items-center gap-2 text-secondary hover:text-primary transition-colors group" href="#">
+<span class="material-symbols-outlined text-lg group-hover:-translate-x-1 transition-transform" data-icon="arrow_back">arrow_back</span>
+<span class="font-mono text-xs uppercase tracking-widest">Back to Jobs</span>
+</a>
+<div>
+<h1 class="text-3xl font-headline font-bold text-on-surface tracking-tight mb-2">feat: add user activity history endpoint</h1>
+<div class="flex items-center gap-4">
+<span class="bg-surface-container-highest px-3 py-1 font-mono text-[10px] tracking-tighter text-secondary border border-outline-variant/30">JOB_ID: 9x-772-alpha</span>
+<span class="flex items-center gap-2 text-on-surface-variant text-sm font-mono">
+<span class="material-symbols-outlined text-sm" data-icon="schedule">schedule</span>
+                            Executed 14m ago
+                        </span>
+</div>
+</div>
+</div>
+<div class="flex flex-col items-end gap-3">
+<div class="px-6 py-3 bg-error/10 border border-error/30 rounded-lg flex flex-col items-end">
+<span class="font-headline font-black text-xl text-error tracking-tighter leading-none">MERGE BLOCKED</span>
+<span class="text-[10px] font-mono text-error/80 mt-1 uppercase tracking-widest">Performance Regression Detected</span>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-surface-container-highest ghost-border text-on-surface font-mono text-xs uppercase tracking-widest hover:bg-surface-container-high transition-colors">Re-Run Analysis</button>
+<button class="px-4 py-2 bg-gradient-to-br from-primary-fixed to-primary-container text-on-primary font-mono text-xs font-bold uppercase tracking-widest active:scale-95 transition-transform">Override (Admin)</button>
+</div>
+</div>
+</header>
+<div class="grid grid-cols-1 md:grid-cols-10 gap-8">
+<!-- Left Column (65%) -->
+<div class="md:col-span-6 space-y-8">
+<!-- AI Findings Card -->
+<section class="bg-surface-container-low p-6 ghost-border relative overflow-hidden">
+<!-- Diagnostic Stage Indicator (3D Block) -->
+<div class="absolute top-0 right-0 w-32 h-32 opacity-20 -mr-8 -mt-8 pointer-events-none">
+<img alt="Diagnostic Stage Block" class="w-full h-full object-cover" data-alt="isometric 3d digital cube with glowing cyan data nodes and circuit lines highly detailed dark tech aesthetic" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPIttxaUUNE7asLBRhLlOo5L1D9xw3G2OwflWL96rn2SJS2rH-iA823qZft4tqIHJvvuVasYxBtraVwoGy5pzDR0xj8zTg3pR8wJ1X4X9Utd-viraVdX27bvnpzh7qznsyDyF7GReOf1p4uPCrRM0bFlHKahADQzSc_F4I7M_gPzHTFpC9UM5pFO7R0caSmEXuWXQ2vY7gsJNTpKX_sp9ZrJ8HxiGtOQpT0EBU2v8SusNM7PQtIr_3dofnE5z1tRw-kQV1E_XKhyZu"/>
+</div>
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary-fixed-dim" data-icon="psychology">psychology</span>
+<h3 class="font-headline font-bold text-lg text-primary tracking-tight">AI Diagnostic: Critical Performance Leak</h3>
+</div>
+<div class="space-y-6">
+<div class="p-4 bg-surface-container-lowest border-l-2 border-primary-fixed-dim">
+<h4 class="font-mono text-xs uppercase tracking-widest text-primary-fixed-dim mb-2">Finding_01: N+1 Query Anti-Pattern</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed mb-4">
+                                The endpoint fetches user activity records but triggers a separate SQL query for each associated <code class="bg-surface-container p-0.5 text-primary-fixed">ActivityType</code> metadata object. At a batch size of 50 records, this results in 51 database roundtrips.
+                            </p>
+<div class="rounded bg-[#0a0e14] p-4 font-mono text-xs overflow-x-auto text-secondary-fixed-dim leading-relaxed border border-outline-variant/10">
+<div class="text-error/60 mb-1">// Current Implementation</div>
+<div class="text-on-surface opacity-50">activities = repo.find_by_user(id)</div>
+<div class="text-on-surface opacity-50">return [a.with_metadata() for a in activities]</div>
+<div class="my-3 text-primary-fixed-dim">// Recommended Fix: Eager Loading</div>
+<div class="text-[#7df4ff]">activities = repo.find_by_user(id).includes(:metadata)</div>
+<div class="text-[#7df4ff]">return activities.to_json()</div>
+</div>
+</div>
+<!-- Load Test Timeline -->
+<div class="mt-8">
+<h4 class="font-label text-xs uppercase tracking-widest text-secondary mb-4">Load Test Timeline (Latency / Throughput)</h4>
+<div class="h-48 w-full bg-surface-container-lowest relative rounded flex items-end px-2 pb-2">
+<!-- Simulated Chart using SVG -->
+<svg class="w-full h-full" preserveaspectratio="none" viewbox="0 0 400 100">
+<!-- Baseline -->
+<path d="M0,80 L50,78 L100,79 L150,77 L200,81 L250,79 L300,78 L400,80" fill="none" stroke="#3b494b" stroke-dasharray="4" stroke-width="1.5"></path>
+<!-- PR Branch (Hockey Stick) -->
+<path class="hockey-stick-path" d="M0,80 L100,78 L200,75 L250,70 L280,50 L310,20 L350,5 L400,2" fill="none" stroke="#00f0ff" stroke-width="2.5"></path>
+</svg>
+<!-- Legend -->
+<div class="absolute bottom-4 left-4 flex gap-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-0.5 bg-primary-container"></div>
+<span class="text-[9px] font-mono text-on-surface-variant">PR_BRANCH_442</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="w-3 h-0.5 bg-outline-variant border-dashed"></div>
+<span class="text-[9px] font-mono text-on-surface-variant">MAIN_BASELINE</span>
+</div>
+</div>
+<div class="absolute top-2 right-2 flex flex-col items-end">
+<span class="text-[10px] font-mono text-error font-bold">+412% LATENCY SPIKE</span>
+<span class="text-[8px] font-mono text-secondary/40">AT 500 REQ/S</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Chaos Scenarios Mini-Cards -->
+<div>
+<h3 class="font-headline font-bold text-lg mb-4 text-on-surface tracking-tight">Chaos Scenarios Executed</h3>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+<div class="bg-surface-container-low p-4 hover:bg-surface-container transition-colors cursor-default border-t border-primary-fixed-dim/20">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="bolt">bolt</span>
+<span class="font-mono text-[10px] uppercase tracking-widest text-on-surface">DB_LATENCY_INJECTION</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-tight">Injected 200ms sleep on IO. Result: Request timeout after 3s.</p>
+</div>
+<div class="bg-surface-container-low p-4 hover:bg-surface-container transition-colors cursor-default border-t border-primary-fixed-dim/20">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="memory">memory</span>
+<span class="font-mono text-[10px] uppercase tracking-widest text-on-surface">CPU_BURN_VALVE</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-tight">Simulated 90% load on Node 4. Result: Container OOM crash.</p>
+</div>
+<div class="bg-surface-container-low p-4 hover:bg-surface-container transition-colors cursor-default border-t border-primary-fixed-dim/20">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-sm text-primary" data-icon="cloud_off">cloud_off</span>
+<span class="font-mono text-[10px] uppercase tracking-widest text-on-surface">REDIS_DROP_FLUX</span>
+</div>
+<p class="text-[11px] text-on-surface-variant leading-tight">Severed cache connection. Result: DB load critical (98%).</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column (35%) -->
+<div class="md:col-span-4 space-y-8">
+<!-- Metrics Comparison Table -->
+<section class="bg-surface-container-low p-6">
+<h3 class="font-label text-xs uppercase tracking-widest text-secondary mb-4">Regression Metrics</h3>
+<div class="overflow-hidden">
+<table class="w-full text-left font-mono text-xs">
+<thead>
+<tr class="text-on-surface-variant opacity-60">
+<th class="pb-3 font-normal">Metric</th>
+<th class="pb-3 font-normal text-right">Baseline</th>
+<th class="pb-3 font-normal text-right">PR Branch</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/10">
+<tr>
+<td class="py-3 text-secondary">P50 Latency</td>
+<td class="py-3 text-right">45ms</td>
+<td class="py-3 text-right text-error font-bold">182ms</td>
+</tr>
+<tr>
+<td class="py-3 text-secondary">P99 Latency</td>
+<td class="py-3 text-right">120ms</td>
+<td class="py-3 text-right text-error font-bold">1,450ms</td>
+</tr>
+<tr>
+<td class="py-3 text-secondary">Max RPS</td>
+<td class="py-3 text-right">1.2k</td>
+<td class="py-3 text-right">840</td>
+</tr>
+<tr>
+<td class="py-3 text-secondary">DB Queries/Req</td>
+<td class="py-3 text-right">4</td>
+<td class="py-3 text-right text-error font-bold">51</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Vertical Pipeline Execution Stepper -->
+<section class="bg-surface-container-low p-6">
+<h3 class="font-label text-xs uppercase tracking-widest text-secondary mb-6">Execution Pipeline</h3>
+<div class="relative space-y-6">
+<!-- Connecting Line -->
+<div class="absolute left-[7px] top-2 bottom-2 w-0.5 bg-outline-variant/30"></div>
+<!-- Steps -->
+<div class="relative flex items-start gap-4">
+<div class="z-10 w-4 h-4 rounded-full bg-primary-fixed-dim mt-1 shadow-[0_0_8px_rgba(0,219,233,0.5)]"></div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-bold text-on-surface uppercase tracking-tight">CI_BUILD_VALIDATE</span>
+<span class="text-[10px] font-mono text-secondary/50">14:02:11</span>
+</div>
+<span class="px-2 py-0.5 bg-primary-fixed-dim/10 text-primary-fixed-dim text-[9px] font-mono uppercase">Success</span>
+</div>
+</div>
+<div class="relative flex items-start gap-4">
+<div class="z-10 w-4 h-4 rounded-full bg-primary-fixed-dim mt-1 shadow-[0_0_8px_rgba(0,219,233,0.5)]"></div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-bold text-on-surface uppercase tracking-tight">KINETIC_OBS_SIM</span>
+<span class="text-[10px] font-mono text-secondary/50">14:05:45</span>
+</div>
+<span class="px-2 py-0.5 bg-primary-fixed-dim/10 text-primary-fixed-dim text-[9px] font-mono uppercase">Completed</span>
+</div>
+</div>
+<div class="relative flex items-start gap-4">
+<div class="z-10 w-4 h-4 rounded-full bg-error mt-1 shadow-[0_0_8px_rgba(255,180,171,0.5)]"></div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-bold text-on-surface uppercase tracking-tight">REGRESSION_GATE</span>
+<span class="text-[10px] font-mono text-secondary/50">14:08:22</span>
+</div>
+<span class="px-2 py-0.5 bg-error/10 text-error text-[9px] font-mono uppercase">Failed</span>
+</div>
+</div>
+<div class="relative flex items-start gap-4 opacity-40">
+<div class="z-10 w-4 h-4 rounded-full bg-outline-variant mt-1"></div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-bold text-on-surface uppercase tracking-tight">AUTO_PATCH_DEPLOY</span>
+<span class="text-[10px] font-mono text-secondary/50">--:--:--</span>
+</div>
+<span class="px-2 py-0.5 bg-surface-container-highest text-secondary text-[9px] font-mono uppercase">Queued</span>
+</div>
+</div>
+</div>
+</section>
+<!-- PR Info Card -->
+<section class="bg-surface-container-low p-6 border-l border-primary-fixed-dim/30">
+<h3 class="font-label text-xs uppercase tracking-widest text-secondary mb-4">Pull Request Context</h3>
+<div class="flex items-center gap-4 mb-4">
+<div class="w-10 h-10 rounded-full bg-surface-container overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="portrait of a tech developer avatar minimalist abstract flat design cyberpunk colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDkRGVtqVHFOsU6YAXhP0P6MOXY7gV2s-eiVcNsxCfamr-HKuARywXzkDIUW5TdXz8vDdHwOAHw-rq4pKw-arJAtuJNs9-OOKXC_rOGeZYTOFhTH7VGmINzGGfQMc9arUxvjrpRAkZebLTQi9b-XrXZo_s2DPbQ0h3v9TQElCVpfVB4HwkInXqL97GA2E0g-3SLjWF7-vsrw_sz8dzMiB21MSVZjYr-IzGwTDqgocinOyIKE1H3DjqfbDwyqKRJVMKUJjGUFLQy86xv"/>
+</div>
+<div>
+<p class="text-sm font-headline font-bold text-on-surface leading-tight">lex_chaos_dev</p>
+<p class="text-[10px] font-mono text-secondary/60">Lead Infrastructure Engineer</p>
+</div>
+</div>
+<div class="space-y-3">
+<div class="flex justify-between text-xs font-mono">
+<span class="text-secondary/60">Branch:</span>
+<span class="text-primary-fixed-dim">feature/activity-feed</span>
+</div>
+<div class="flex justify-between text-xs font-mono">
+<span class="text-secondary/60">Changed Files:</span>
+<span class="text-on-surface">12 files</span>
+</div>
+<div class="flex justify-between text-xs font-mono">
+<span class="text-secondary/60">Commits:</span>
+<span class="text-on-surface">3 commits</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- Visual Style Inspiration Overlay (Subtle Gradient Background for certain cards) -->
+<div class="fixed inset-0 -z-10 pointer-events-none opacity-20">
+<div class="absolute top-0 right-0 w-[500px] h-[500px] bg-[#00f0ff]/10 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-0 left-0 w-[500px] h-[500px] bg-[#1c2026] rounded-full blur-[120px]"></div>
+</div>
+</body></html>

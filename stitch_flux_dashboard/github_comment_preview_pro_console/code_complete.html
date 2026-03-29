@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Comment Preview | PR #402</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#dbfcff",
+                        "primary-container": "#00f0ff",
+                        "primary-fixed-dim": "#00dbe9",
+                        "on-primary": "#00363a",
+                        "secondary": "#c6c6c7",
+                        "surface": "#10141a",
+                        "surface-container-lowest": "#0a0e14",
+                        "surface-container-low": "#181c22",
+                        "surface-container": "#1c2026",
+                        "surface-container-highest": "#31353c",
+                        "on-surface": "#dfe2eb",
+                        "on-surface-variant": "#b9cacb",
+                        "outline": "#849495",
+                        "outline-variant": "#3b494b",
+                        "error": "#ffb4ab",
+                        "background": "#10141a",
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Space Grotesk"],
+                        "mono": ["JetBrains Mono"]
+                    },
+                },
+            },
+        }
+    </script>
+    
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        
+        .glass-panel {
+            background: rgba(28, 32, 38, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 240, 255, 0.05);
+        }
+
+        .markdown-preview {
+            background: rgba(10, 14, 20, 0.5);
+            border-left: 3px solid #dbfcff;
+        }
+
+        .diff-added {
+            background: rgba(0, 240, 255, 0.1);
+            border-left: 3px solid #00f0ff;
+        }
+
+        .diff-removed {
+            background: rgba(255, 68, 68, 0.1);
+            border-left: 3px solid #ff4444;
+        }
+
+        .code-block {
+            background: #0a0e14;
+            border: 1px solid rgba(132, 148, 149, 0.15);
+            padding: 12px;
+            overflow-x: auto;
+        }
+
+        .token-keyword { color: #ff9cac; }
+        .token-string { color: #6dd3ff; }
+        .token-function { color: #84f3de; }
+        .token-comment { color: #6b7684; }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface font-body">
+
+<!-- HEADER -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-16 bg-surface border-b border-surface-variant bg-opacity-95 backdrop-blur-sm">
+    <div>
+        <h1 class="text-sm font-bold font-headline text-primary" style="letter-spacing: 0.08em;">COMMENT PREVIEW</h1>
+        <p class="text-xs text-on-surface-variant font-mono">PR #402 - Fix N+1 query in user dashboard</p>
+    </div>
+    <div class="flex gap-3">
+        <button class="px-4 py-2 border border-outline-variant border-opacity-30 text-on-surface-variant font-mono text-xs hover:bg-surface-container transition-colors">EDIT</button>
+        <button class="px-4 py-2 bg-primary text-on-primary font-bold text-xs font-mono hover:shadow-lg hover:shadow-primary/30 transition-all">POST TO GITHUB</button>
+    </div>
+</header>
+
+<!-- MAIN -->
+<main class="mt-16 p-8 bg-surface min-h-screen">
+    <div class="grid grid-cols-3 gap-8">
+        <!-- Left: Editor -->
+        <div class="col-span-2">
+            <div class="glass-panel rounded p-6 border border-surface-variant border-opacity-10">
+                <h2 class="text-lg font-headline font-bold text-on-surface mb-4" style="letter-spacing: -0.01em;">AI-Generated Comment</h2>
+                
+                <!-- Tabs -->
+                <div class="flex gap-4 mb-6 border-b border-surface-variant border-opacity-10 pb-4">
+                    <button class="text-xs font-mono text-primary font-bold pb-2 border-b-2 border-primary">PREVIEW</button>
+                    <button class="text-xs font-mono text-on-surface-variant pb-2 hover:text-on-surface transition-colors">MARKDOWN</button>
+                </div>
+
+                <!-- Comment Content -->
+                <div class="markdown-preview rounded p-4 mb-6 text-sm space-y-4" data-section="comment">
+                    <div>
+                        <p class="text-primary font-bold mb-2">✅ Chaos Testing PASSED</p>
+                        <p class="text-on-surface-variant">This PR was tested against 23 chaos scenarios and passed all criteria.</p>
+                    </div>
+
+                    <div>
+                        <p class="font-bold text-on-surface mb-2">Performance Analysis</p>
+                        <table class="w-full text-xs border-collapse">
+                            <tr class="border-b border-surface-variant border-opacity-10">
+                                <td class="px-2 py-2 text-on-surface-variant">Metric</td>
+                                <td class="px-2 py-2 text-on-surface">Result</td>
+                                <td class="px-2 py-2 text-on-surface">Status</td>
+                            </tr>
+                            <tr class="border-b border-surface-variant border-opacity-10">
+                                <td class="px-2 py-2 text-on-surface-variant">P99 Latency</td>
+                                <td class="px-2 py-2 text-on-surface">247ms</td>
+                                <td class="px-2 py-2"><span style="color: #00f0ff;">✓</span> PASS</td>
+                            </tr>
+                            <tr class="border-b border-surface-variant border-opacity-10">
+                                <td class="px-2 py-2 text-on-surface-variant">Error Rate</td>
+                                <td class="px-2 py-2 text-on-surface">0.3%</td>
+                                <td class="px-2 py-2"><span style="color: #00f0ff;">✓</span> PASS</td>
+                            </tr>
+                            <tr class="border-b border-surface-variant border-opacity-10">
+                                <td class="px-2 py-2 text-on-surface-variant">Throughput</td>
+                                <td class="px-2 py-2 text-on-surface">1.2K RPS</td>
+                                <td class="px-2 py-2"><span style="color: #00f0ff;">✓</span> PASS</td>
+                            </tr>
+                            <tr class="border-b border-surface-variant border-opacity-10">
+                                <td class="px-2 py-2 text-on-surface-variant">DB Pool</td>
+                                <td class="px-2 py-2 text-on-surface">240/300</td>
+                                <td class="px-2 py-2"><span style="color: #00f0ff;">✓</span> HEALTHY</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div>
+                        <p class="font-bold text-on-surface mb-2">What Changed</p>
+                        <div class="diff-added rounded px-3 py-2 font-mono text-xs mb-2">
+                            <span class="text-on-surface">+ Aggregation query replaces N+1 pattern</span>
+                        </div>
+                        <div class="diff-added rounded px-3 py-2 font-mono text-xs">
+                            <span class="text-on-surface">+ Dashboard load time: 40% faster</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="font-bold text-on-surface mb-2">Code Fix</p>
+                        <div class="code-block rounded text-xs">
+                            <pre><code><span class="token-comment">// ✓ Optimized aggregation</span>
+<span class="token-keyword">const</span> users = <span class="token-function">db.users.aggregate</span>([
+  {{ <span class="token-string">"$lookup"</span>: {{ ... }} }},
+  {{ <span class="token-string">"$project"</span>: {{ ... }} }}
+])</code></pre>
+                        </div>
+                    </div>
+
+                    <div>
+                        <p class="font-bold text-on-surface mb-2">Recommendation</p>
+                        <p class="text-on-surface-variant">🟢 <strong>SAFE TO MERGE</strong> — This optimization improves performance without introducing risk. All chaos scenarios passed.</p>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="flex gap-3 pt-4 border-t border-surface-variant border-opacity-10">
+                    <button class="px-3 py-2 bg-primary text-on-primary font-bold text-xs font-mono rounded hover:shadow-lg hover:shadow-primary/30 transition-all" data-action="post-to-pr">POST</button>
+                    <button class="px-3 py-2 border border-outline-variant border-opacity-30 text-on-surface-variant font-mono text-xs rounded hover:bg-surface-container transition-colors">CANCEL</button>
+                    <button class="px-3 py-2 border border-outline-variant border-opacity-30 text-on-surface-variant font-mono text-xs rounded hover:bg-surface-container transition-colors" data-action="copy">COPY</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Sidebar Info & Stats -->
+        <aside class="space-y-6">
+            <!-- Quick Info -->
+            <div class="glass-panel rounded p-6 border border-surface-variant border-opacity-10">
+                <h3 class="text-sm font-mono text-on-surface-variant mb-4" style="letter-spacing: 0.08em;">ANALYSIS</h3>
+                <div class="space-y-3 text-xs">
+                    <div>
+                        <p class="text-on-surface-variant mb-1">Test Duration</p>
+                        <p class="text-primary font-mono font-bold">3m 45s</p>
+                    </div>
+                    <div>
+                        <p class="text-on-surface-variant mb-1">Chaos Events</p>
+                        <p class="text-primary font-mono font-bold">23/23 PASSED</p>
+                    </div>
+                    <div>
+                        <p class="text-on-surface-variant mb-1">Performance Gain</p>
+                        <p class="text-primary font-mono font-bold">+40%</p>
+                    </div>
+                    <div>
+                        <p class="text-on-surface-variant mb-1">Confidence</p>
+                        <p class="text-primary font-mono font-bold">94%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comment Settings -->
+            <div class="glass-panel rounded p-6 border border-surface-variant border-opacity-10">
+                <h3 class="text-sm font-mono text-on-surface-variant mb-4" style="letter-spacing: 0.08em;">SETTINGS</h3>
+                <div class="space-y-3 text-xs">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked class="w-4 h-4 accent-primary"/>
+                        <span class="text-on-surface-variant">Include metrics table</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked class="w-4 h-4 accent-primary"/>
+                        <span class="text-on-surface-variant">Show code diff</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked class="w-4 h-4 accent-primary"/>
+                        <span class="text-on-surface-variant">Add recommendations</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="w-4 h-4 accent-primary"/>
+                        <span class="text-on-surface-variant">Request approval</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Related Info -->
+            <div class="glass-panel rounded p-6 border border-surface-variant border-opacity-10">
+                <h3 class="text-sm font-mono text-on-surface-variant mb-4" style="letter-spacing: 0.08em;">RELATED</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="p-2 bg-surface-container rounded">
+                        <p class="text-on-surface-variant">Reviewer</p>
+                        <p class="text-primary font-mono">flux-bot</p>
+                    </div>
+                    <div class="p-2 bg-surface-container rounded">
+                        <p class="text-on-surface-variant">Test Suite</p>
+                        <p class="text-primary font-mono">chaos-v2</p>
+                    </div>
+                    <div class="p-2 bg-surface-container rounded">
+                        <p class="text-on-surface-variant">Merge Policy</p>
+                        <p class="text-primary font-mono">auto-merge</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Guides -->
+            <div class="space-y-2 text-xs">
+                <a href="#" class="flex items-center gap-2 text-primary-fixed hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined text-sm">help_outline</span>
+                    <span>Learn More</span>
+                </a>
+                <a href="#" class="flex items-center gap-2 text-primary-fixed hover:text-primary transition-colors">
+                    <span class="material-symbols-outlined text-sm">article</span>
+                    <span>Documentation</span>
+                </a>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<script src="../js/api.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/github-comment-preview.js"></script>
+
+</body>
+</html>

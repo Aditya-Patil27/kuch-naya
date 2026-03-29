@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>EMPIRICAL_COMMAND // Job Queue</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#8ff5ff",
+                        "primary-container": "#00deec",
+                        "primary-fixed": "#00eefc",
+                        "primary-fixed-dim": "#00deec",
+                        "on-primary": "#003f43",
+                        "on-primary-fixed": "#003f43",
+                        "secondary": "#8197ff",
+                        "on-secondary": "#001661",
+                        "secondary-container": "#124af0",
+                        "surface": "#080f16",
+                        "surface-dim": "#080f16",
+                        "surface-bright": "#232d38",
+                        "surface-container-lowest": "#000000",
+                        "surface-container-low": "#0d141c",
+                        "surface-container": "#131a23",
+                        "surface-container-high": "#18202a",
+                        "surface-container-highest": "#1e2731",
+                        "on-surface": "#ebf1fb",
+                        "on-surface-variant": "#c8d2e0",
+                        "outline": "#70767f",
+                        "outline-variant": "#1e2731",
+                        "surface-tint": "#8ff5ff",
+                        "error": "#ff716c",
+                        "on-error": "#490006",
+                        "error-container": "#9f0519",
+                        "on-error-container": "#ffa8a3",
+                        "background": "#080f16",
+                        "on-background": "#ebf1fb",
+                        "tertiary": "#ff9198",
+                        "on-tertiary": "#78001f",
+                    },
+                    fontFamily: {
+                        "headline": ["Space Grotesk"],
+                        "body": ["Space Grotesk"],
+                        "label": ["Space Grotesk"],
+                        "mono": ["JetBrains Mono"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0px",
+                        "lg": "2px",
+                        "xl": "4px",
+                    },
+                    animation: {
+                        "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                        "slide-in": "slide-in 0.3s ease-out"
+                    },
+                    keyframes: {
+                        "pulse-glow": {
+                            "0%, 100%": { boxShadow: "0 0 12px rgba(143, 245, 255, 0.2)" },
+                            "50%": { boxShadow: "0 0 24px rgba(143, 245, 255, 0.4)" }
+                        },
+                        "slide-in": {
+                            "from": { transform: "translateX(-10px)", opacity: "0" },
+                            "to": { transform: "translateX(0)", opacity: "1" }
+                        }
+                    }
+                },
+            },
+        }
+    </script>
+    
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        
+        .glass-panel {
+            background: rgba(24, 32, 42, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(143, 245, 255, 0.1);
+        }
+
+        .status-pass {
+            border-left: 3px solid #8ff5ff;
+            background: rgba(143, 245, 255, 0.05);
+        }
+
+        .status-blocked {
+            border-left: 3px solid #ff716c;
+            background: rgba(255, 113, 108, 0.05);
+        }
+
+        .status-running {
+            border-left: 3px solid #ffc857;
+            background: rgba(255, 200, 87, 0.05);
+        }
+
+        .expandable-row {
+            transition: all 0.3s ease;
+        }
+
+        .expandable-row.expanded + .detail-row {
+            display: table-row;
+        }
+
+        .detail-row {
+            display: none;
+        }
+
+        body::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        body::-webkit-scrollbar-thumb {
+            background: rgba(143, 245, 255, 0.15);
+            border-radius: 4px;
+        }
+
+        body::-webkit-scrollbar-thumb:hover {
+            background: rgba(143, 245, 255, 0.3);
+        }
+
+        .table-header {
+            background: rgba(30, 39, 49, 0.5);
+        }
+
+        .table-row-hover {
+            transition: all 0.2s ease;
+        }
+
+        .table-row-hover:hover {
+            background: rgba(143, 245, 255, 0.04);
+        }
+    </style>
+</head>
+
+<body class="bg-background text-on-surface font-body">
+
+<!-- TOP NAVIGATION BAR -->
+<header class="fixed top-0 w-full z-50 flex justify-between items-center px-8 h-16 bg-surface-container-low border-b border-outline-variant border-opacity-20 backdrop-blur-sm">
+    <div class="flex items-center gap-4">
+        <div class="w-10 h-10 bg-gradient-to-br from-primary to-primary-container flex items-center justify-center">
+            <span class="text-on-primary font-bold">⚡</span>
+        </div>
+        <div>
+            <h1 class="text-xs font-bold font-headline text-primary" style="letter-spacing: 0.1em;">EMPIRICAL_COMMAND</h1>
+            <p class="text-[10px] text-on-surface-variant font-mono" style="letter-spacing: 0.05em;">TIME [00:47] // QUEUE</p>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-6">
+        <button class="px-3 py-2 font-mono text-xs text-primary hover:bg-surface-container transition-colors">EXPORT</button>
+        <button class="px-3 py-2 font-mono text-xs text-primary hover:bg-surface-container transition-colors">REFRESH</button>
+    </div>
+</header>
+
+<!-- LEFT SIDEBAR -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-56 bg-surface-container-low border-r border-outline-variant border-opacity-20 backdrop-blur-sm z-40">
+    <nav class="p-6 space-y-8">
+        <div>
+            <p class="text-xs font-mono text-on-surface-variant uppercase mb-4" style="letter-spacing: 0.1em;">Views</p>
+            <ul class="space-y-2">
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 bg-primary bg-opacity-15 border-l border-primary text-primary font-mono text-xs transition-all animate-slide-in">
+                    <span class="material-symbols-outlined text-sm">list_alt</span>
+                    <span>Queue</span>
+                </a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 hover:bg-surface-container text-on-surface-variant font-mono text-xs transition-colors">
+                    <span class="material-symbols-outlined text-sm">dashboard</span>
+                    <span>Dashboard</span>
+                </a></li>
+                <li><a href="#" class="flex items-center gap-3 px-3 py-2 hover:bg-surface-container text-on-surface-variant font-mono text-xs transition-colors">
+                    <span class="material-symbols-outlined text-sm">analytics</span>
+                    <span>Analytics</span>
+                </a></li>
+            </ul>
+        </div>
+
+        <div>
+            <p class="text-xs font-mono text-on-surface-variant uppercase mb-4" style="letter-spacing: 0.1em;">Filters</p>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-xs text-on-surface-variant mb-2 font-mono">Status</p>
+                    <select class="w-full bg-surface-container px-2 py-1 text-xs text-on-surface font-mono border border-outline-variant border-opacity-20">
+                        <option>All</option>
+                        <option>PASS</option>
+                        <option>BLOCKED</option>
+                        <option>RUNNING</option>
+                    </select>
+                </div>
+                <div>
+                    <p class="text-xs text-on-surface-variant mb-2 font-mono">Repository</p>
+                    <select class="w-full bg-surface-container px-2 py-1 text-xs text-on-surface font-mono border border-outline-variant border-opacity-20">
+                        <option>All Projects</option>
+                        <option>core/api</option>
+                        <option>ui/dashboard</option>
+                        <option>workers/async</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <p class="text-xs font-mono text-on-surface-variant uppercase mb-4" style="letter-spacing: 0.1em;">Queue Stats</p>
+            <div class="space-y-2">
+                <div class="px-3 py-2 bg-surface-container border border-outline-variant border-opacity-10">
+                    <p class="text-[10px] text-on-surface-variant font-mono">Total Jobs</p>
+                    <p class="text-lg font-mono font-bold text-primary">847</p>
+                </div>
+                <div class="px-3 py-2 bg-surface-container border border-outline-variant border-opacity-10">
+                    <p class="text-[10px] text-on-surface-variant font-mono">Active</p>
+                    <p class="text-lg font-mono font-bold text-primary">12</p>
+                </div>
+                <div class="px-3 py-2 bg-surface-container border border-outline-variant border-opacity-10">
+                    <p class="text-[10px] text-on-surface-variant font-mono">Queued</p>
+                    <p class="text-lg font-mono font-bold" style="color: #ffc857;">28</p>
+                </div>
+            </div>
+        </div>
+    </nav>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="ml-56 mt-16 p-8 bg-surface min-h-[calc(100vh-64px)]">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h2 class="text-3xl font-headline font-bold text-on-surface mb-1" style="letter-spacing: -0.01em;">Job Queue</h2>
+        <p class="text-xs font-mono text-on-surface-variant" style="letter-spacing: 0.05em;">847 JOBS /// 94.2% SUCCESS</p>
+    </div>
+
+    <!-- Controls Row -->
+    <div class="flex justify-between items-center mb-6">
+            <div class="flex gap-2">
+                <input type="text" placeholder="Search PR or repo..." data-action="search" class="px-3 py-2 bg-surface-container border border-outline-variant border-opacity-20 text-xs font-mono text-on-surface placeholder-on-surface-variant focus:outline-none focus:border-primary focus:border-opacity-50" style="width: 200px;"/>
+            <button class="px-3 py-2 border border-outline-variant border-opacity-20 text-on-surface-variant font-mono text-xs hover:bg-surface-container transition-colors">FILTER</button>
+        </div>
+        <div class="flex gap-2">
+            <button class="px-3 py-2 bg-primary text-on-primary font-mono text-xs font-bold hover:shadow-lg hover:shadow-primary/30 transition-all">CLEAR QUEUE</button>
+            <button class="px-3 py-2 border border-primary border-opacity-30 text-primary font-mono text-xs hover:bg-surface-container transition-colors">PAUSE ALL</button>
+        </div>
+    </div>
+
+    <!-- Jobs Table -->
+    <div class="glass-panel border border-outline-variant border-opacity-20 overflow-hidden" data-section="jobs">
+        <table class="w-full text-xs font-mono">
+            <thead class="table-header">
+                <tr class="border-b border-outline-variant border-opacity-10">
+                    <th class="px-6 py-3 text-left text-on-surface-variant" style="letter-spacing: 0.1em;">JOB ID</th>
+                    <th class="px-6 py-3 text-left text-on-surface-variant" style="letter-spacing: 0.1em;">PR / REPO</th>
+                    <th class="px-6 py-3 text-left text-on-surface-variant" style="letter-spacing: 0.1em;">STATUS</th>
+                    <th class="px-6 py-3 text-left text-on-surface-variant" style="letter-spacing: 0.1em;">DURATION</th>
+                    <th class="px-6 py-3 text-left text-on-surface-variant" style="letter-spacing: 0.1em;">CHAOS EVENTS</th>
+                    <th class="px-6 py-3 text-left text-on-surface-variant" style="letter-spacing: 0.1em;">QUEUED</th>
+                    <th class="px-6 py-3 text-left text-on-surface-variant" style="letter-spacing: 0.1em;"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant divide-opacity-10">
+                <!-- Pass Job -->
+                <tr class="status-pass table-row-hover expandable-row cursor-pointer" onclick="toggleDetail(this)">
+                    <td class="px-6 py-3 text-primary font-bold">JOB-2847</td>
+                    <td class="px-6 py-3 text-on-surface">PR #402 / core/api</td>
+                    <td class="px-6 py-3"><span class="flex items-center gap-2"><span style="color: #8ff5ff;">●</span><span class="text-primary">PASS</span></span></td>
+                    <td class="px-6 py-3 text-on-surface-variant">3m 45s</td>
+                    <td class="px-6 py-3 text-primary">23</td>
+                    <td class="px-6 py-3 text-on-surface-variant">2 min ago</td>
+                    <td class="px-6 py-3"><span class="material-symbols-outlined text-sm">expand_more</span></td>
+                </tr>
+                <tr class="detail-row bg-surface-container-low border-b border-outline-variant border-opacity-10">
+                    <td colspan="7" class="px-6 py-4">
+                        <div class="grid grid-cols-3 gap-4 text-[11px]">
+                            <div>
+                                <p class="text-on-surface-variant mb-1">Author</p>
+                                <p class="text-on-surface">alex@flux.dev</p>
+                            </div>
+                            <div>
+                                <p class="text-on-surface-variant mb-1">Latency Impact</p>
+                                <p class="text-on-surface">+8% under chaos</p>
+                            </div>
+                            <div>
+                                <p class="text-on-surface-variant mb-1">Performance Score</p>
+                                <p class="text-primary font-bold">94/100</p>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Blocked Job -->
+                <tr class="status-blocked table-row-hover expandable-row cursor-pointer" onclick="toggleDetail(this)">
+                    <td class="px-6 py-3 text-primary font-bold">JOB-2846</td>
+                    <td class="px-6 py-3 text-on-surface">PR #401 / ui/dashboard</td>
+                    <td class="px-6 py-3"><span class="flex items-center gap-2"><span style="color: #ff716c;">●</span><span style="color: #ff716c;">BLOCKED</span></span></td>
+                    <td class="px-6 py-3 text-on-surface-variant">5m 12s</td>
+                    <td class="px-6 py-3 text-primary">47</td>
+                    <td class="px-6 py-3 text-on-surface-variant">8 min ago</td>
+                    <td class="px-6 py-3"><span class="material-symbols-outlined text-sm">expand_more</span></td>
+                </tr>
+                <tr class="detail-row bg-surface-container-low border-b border-outline-variant border-opacity-10">
+                    <td colspan="7" class="px-6 py-4">
+                        <div class="grid grid-cols-3 gap-4 text-[11px]">
+                            <div>
+                                <p class="text-on-surface-variant mb-1">Author</p>
+                                <p class="text-on-surface">sarah@ui.dev</p>
+                            </div>
+                            <div>
+                                <p class="text-on-surface-variant mb-1">Failure Reason</p>
+                                <p style="color: #ff716c;">P99 Latency exceeded: 1243ms > 1000ms</p>
+                            </div>
+                            <div>
+                                <p class="text-on-surface-variant mb-1">Recommendation</p>
+                                <p class="text-on-surface">Add caching layer</p>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Pass Job -->
+                <tr class="status-pass table-row-hover expandable-row cursor-pointer" onclick="toggleDetail(this)">
+                    <td class="px-6 py-3 text-primary font-bold">JOB-2845</td>
+                    <td class="px-6 py-3 text-on-surface">PR #400 / core/db</td>
+                    <td class="px-6 py-3"><span class="flex items-center gap-2"><span style="color: #8ff5ff;">●</span><span class="text-primary">PASS</span></span></td>
+                    <td class="px-6 py-3 text-on-surface-variant">4m 08s</td>
+                    <td class="px-6 py-3 text-primary">31</td>
+                    <td class="px-6 py-3 text-on-surface-variant">15 min ago</td>
+                    <td class="px-6 py-3"><span class="material-symbols-outlined text-sm">expand_more</span></td>
+                </tr>
+                <tr class="detail-row bg-surface-container-low border-b border-outline-variant border-opacity-10">
+                    <td colspan="7" class="px-6 py-4">
+                        <div class="grid grid-cols-3 gap-4 text-[11px]">
+                            <div>
+                                <p class="text-on-surface-variant mb-1">Author</p>
+                                <p class="text-on-surface">mike@db.dev</p>
+                            </div>
+                            <div>
+                                <p class="text-on-surface-variant mb-1">Query Performance</p>
+                                <p class="text-on-surface">+2% improvement</p>
+                            </div>
+                            <div>
+                                <p class="text-on-surface-variant mb-1">Connection Pool</p>
+                                <p class="text-primary">Stable (250/300)</p>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Running Job -->
+                <tr class="status-running table-row-hover">
+                    <td class="px-6 py-3 text-primary font-bold">JOB-2844</td>
+                    <td class="px-6 py-3 text-on-surface">PR #399 / workers/async</td>
+                    <td class="px-6 py-3"><span class="flex items-center gap-2"><span style="color: #ffc857;">●</span><span style="color: #ffc857;">RUNNING</span></span></td>
+                    <td class="px-6 py-3 text-on-surface-variant">2m 34s...</td>
+                    <td class="px-6 py-3 text-primary">15</td>
+                    <td class="px-6 py-3 text-on-surface-variant">23 min ago</td>
+                    <td class="px-6 py-3"><span class="material-symbols-outlined text-sm">schedule</span></td>
+                </tr>
+
+                <!-- Pass Job -->
+                <tr class="status-pass table-row-hover">
+                    <td class="px-6 py-3 text-primary font-bold">JOB-2843</td>
+                    <td class="px-6 py-3 text-on-surface">PR #398 / infra/k8s</td>
+                    <td class="px-6 py-3"><span class="flex items-center gap-2"><span style="color: #8ff5ff;">●</span><span class="text-primary">PASS</span></span></td>
+                    <td class="px-6 py-3 text-on-surface-variant">3m 21s</td>
+                    <td class="px-6 py-3 text-primary">18</td>
+                    <td class="px-6 py-3 text-on-surface-variant">31 min ago</td>
+                    <td class="px-6 py-3"><span class="material-symbols-outlined text-sm">expand_more</span></td>
+                </tr>
+
+                <!-- Pass Job -->
+                <tr class="status-pass table-row-hover">
+                    <td class="px-6 py-3 text-primary font-bold">JOB-2842</td>
+                    <td class="px-6 py-3 text-on-surface">PR #397 / services/auth</td>
+                    <td class="px-6 py-3"><span class="flex items-center gap-2"><span style="color: #8ff5ff;">●</span><span class="text-primary">PASS</span></span></td>
+                    <td class="px-6 py-3 text-on-surface-variant">6m 15s</td>
+                    <td class="px-6 py-3 text-primary">42</td>
+                    <td class="px-6 py-3 text-on-surface-variant">42 min ago</td>
+                    <td class="px-6 py-3"><span class="material-symbols-outlined text-sm">expand_more</span></td>
+                </tr>
+
+                <!-- Pass Job -->
+                <tr class="status-pass table-row-hover">
+                    <td class="px-6 py-3 text-primary font-bold">JOB-2841</td>
+                    <td class="px-6 py-3 text-on-surface">PR #396 / frontend/pages</td>
+                    <td class="px-6 py-3"><span class="flex items-center gap-2"><span style="color: #8ff5ff;">●</span><span class="text-primary">PASS</span></span></td>
+                    <td class="px-6 py-3 text-on-surface-variant">2m 54s</td>
+                    <td class="px-6 py-3 text-primary">8</td>
+                    <td class="px-6 py-3 text-on-surface-variant">1h ago</td>
+                    <td class="px-6 py-3"><span class="material-symbols-outlined text-sm">expand_more</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-between items-center mt-6">
+        <p class="text-xs font-mono text-on-surface-variant" data-info="page">Showing 1-7 of 847 jobs</p>
+        <div class="flex gap-2">
+            <button class="px-2 py-1 border border-outline-variant border-opacity-20 text-on-surface-variant font-mono text-xs hover:bg-surface-container" data-action="prev">PREV</button>
+            <button class="px-3 py-1 bg-primary text-on-primary font-mono text-xs font-bold">1</button>
+            <button class="px-3 py-1 border border-outline-variant border-opacity-20 text-on-surface-variant font-mono text-xs hover:bg-surface-container">2</button>
+            <button class="px-3 py-1 border border-outline-variant border-opacity-20 text-on-surface-variant font-mono text-xs hover:bg-surface-container">3</button>
+            <button class="px-2 py-1 border border-outline-variant border-opacity-20 text-on-surface-variant font-mono text-xs hover:bg-surface-container" data-action="next">NEXT</button>
+        </div>
+    </div>
+</main>
+
+<script>
+    function toggleDetail(row) {
+        row.classList.toggle('expanded');
+    }
+</script>
+
+<script src="../js/api.js"></script>
+<script src="../js/websocket.js"></script>
+<script src="../js/utils.js"></script>
+<script src="../js/jobs-history.js"></script>
+
+</body>
+</html>
