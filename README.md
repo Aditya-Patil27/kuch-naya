@@ -104,8 +104,10 @@ Tertiary (Accent):           #f2f5ff
 
 ### 1. Open Dashboard
 ```bash
-# Just open any HTML file in a browser - no build required!
-open stitch_flux_dashboard/flux_dashboard_pro_console/code_complete.html
+# Start the React frontend
+cd flux-ui
+npm install
+npm run dev
 ```
 
 ### 2. Navigate Between Pages
@@ -130,41 +132,15 @@ All pages are standalone and fully functional:
 ## 📂 Project Structure
 
 ```
-stitch_flux_dashboard/
-│
-├── flux_dashboard_pro_console/
-│   ├── code.html              (original skeleton)
-│   └── code_complete.html     ✅ COMPLETE DASHBOARD
-│
-├── jobs_history_pro_console/
-│   ├── code.html              (original skeleton)
-│   └── code_complete.html     ✅ COMPLETE JOB QUEUE
-│
-├── job_detail_pr_402_pro_console/
-│   ├── code.html              (original skeleton)
-│   └── code_complete.html     ✅ COMPLETE JOB DETAIL
-│
-├── github_comment_preview_pro_console/
-│   ├── code.html              (original skeleton)
-│   └── code_complete.html     ✅ COMPLETE COMMENT PREVIEW
-│
-├── settings_pro_console/
-│   ├── code.html              (original skeleton)
-│   └── code_complete.html     ✅ COMPLETE SETTINGS
-│
-├── empirical_terminal/
-│   ├── DESIGN.md              (Design specifications)
-│   ├── code.html              (original skeleton)
-│   └── code_complete.html     ✅ COMPLETE TERMINAL
-│
-└── void_command/
-    ├── DESIGN.md              (Design specifications)
-    ├── code.html              (original skeleton)
-    └── code_complete.html     ✅ COMPLETE ORCHESTRATION
-
-📄 Additional Files:
-├── flux_technical_architecture.md    (System architecture)
-└── PROGRESS.md                       (Build progress tracking)
+server/
+worker/
+k6/
+db/
+flux-ui/
+docker-compose.yml
+package.json
+flux_technical_architecture.md
+PROGRESS.md
 ```
 
 ---
@@ -419,8 +395,13 @@ query GetJobs {
 For a fully static setup, deploy to any CDN:
 
 ```bash
-# Build (already done - just copy HTML files)
-cp -r stitch_flux_dashboard/* /deploy/
+# Build frontend output
+cd flux-ui
+npm install
+npm run build
+
+# Copy build output
+cp -r dist/* /deploy/
 
 # Push to S3
 aws s3 sync /deploy/ s3://my-bucket/ --delete
@@ -432,13 +413,13 @@ vercel deploy --prod
 ### Docker Containerization
 ```dockerfile
 FROM nginx:alpine
-COPY stitch_flux_dashboard/ /usr/share/nginx/html/
+COPY flux-ui/dist/ /usr/share/nginx/html/
 EXPOSE 80
 ```
 
 ### Node.js Express
 ```javascript
-app.use(express.static('stitch_flux_dashboard'));
+app.use(express.static('flux-ui/dist'));
 app.listen(3000);
 ```
 
@@ -446,21 +427,7 @@ app.listen(3000);
 
 ## 📖 Design Documentation
 
-### Empirical Terminal (Dark Observer)
-See `empirical_terminal/DESIGN.md` for:
-- Kinetic Observatory aesthetic
-- Color palette specifications
-- Component design patterns
-- Glass & gradient rules
-- Typography hierarchy
-
-### Void Command (Organic Brutalism)
-See `void_command/DESIGN.md` for:
-- Organic Brutalism philosophy
-- Sharp elevation techniques
-- Terminal interface design
-- Advanced component patterns
-- Edge-to-edge layouts
+Legacy static prototype pages under `stitch_flux_dashboard/` were removed.
 
 ### Technical Architecture
 See `flux_technical_architecture.md` for:
@@ -497,7 +464,7 @@ To extend the dashboard:
 
 1. **Add New Pages** - Follow the structure of existing pages
 2. **Create Components** - Use the existing glass-panel and style patterns
-3. **Update Colors** - Modify the Tailwind config (not individual files)
+3. **Update Colors** - Modify `flux-ui/src/tokens.js` and page/component styles
 4. **Test Responsive** - Check mobile, tablet, desktop breakpoints
 5. **Maintain Contrast** - Keep WCAG AA compliance
 

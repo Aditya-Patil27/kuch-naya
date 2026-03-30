@@ -1,0 +1,29 @@
+{
+  "name": "flux",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flux chaos reviewer runtime",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js",
+    "worker": "nodemon worker/index.js",
+    "compose:up": "docker compose up -d",
+    "compose:dn": "docker compose down"
+  },
+  "dependencies": {
+    "@octokit/app": "^16.1.0",
+    "@octokit/rest": "^22.0.0",
+    "bull": "^4.16.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "ioredis": "^5.8.1",
+    "nanoid": "^3.3.8",
+    "node-fetch": "^3.3.2",
+    "pg": "^8.16.3",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
