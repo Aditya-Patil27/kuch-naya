@@ -7,11 +7,13 @@ export const options = {
 };
 
 export default function () {
-  const target = `${__ENV.TARGET_URL}/api/orders?userId=1`;
-  const res = http.get(target);
+  const path = __ENV.TARGET_PATH || '/api/health';
+  const method = (__ENV.TARGET_METHOD || 'GET').toUpperCase();
+  const target = `${__ENV.TARGET_URL}${path}`;
+  const res = http.request(method, target);
 
   check(res, {
-    'status is 200': (r) => r.status === 200,
+    'status is success': (r) => r.status >= 200 && r.status < 300,
   });
 
   sleep(0.1);

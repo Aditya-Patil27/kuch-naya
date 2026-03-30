@@ -13,6 +13,10 @@ const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const queue = new Bull('flux-jobs', redisUrl);
 const redisPub = new Redis(redisUrl);
 
+redisPub.on('error', (error) => {
+  console.error('[worker] redis publish connection error:', error.message);
+});
+
 function stageToIndex(stage) {
   const map = {
     queued: 0,
@@ -107,6 +111,13 @@ queue.on('failed', (job, err) => {
 console.log('⚙️ Flux worker ready — waiting for jobs...');
 
 process.on('SIGINT', async () => {
+  await redisPub.quit();
+  await queue.close();
+  await pg.end();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
   await redisPub.quit();
   await queue.close();
   await pg.end();

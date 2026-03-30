@@ -25,7 +25,12 @@ function broadcastJob(event, data) {
 
   for (const client of clients) {
     if (client.readyState === 1) {
-      client.send(payload);
+      try {
+        client.send(payload);
+      } catch {
+        client.terminate();
+        clients.delete(client);
+      }
     }
   }
 }

@@ -26,6 +26,7 @@ export const VERDICT = {
   PASS:    { bg: 'rgba(63,185,80,0.13)',   color: '#3FB950', border: 'rgba(63,185,80,0.45)',   shadow: 'rgba(63,185,80,0.15)' },
   WARN:    { bg: 'rgba(210,153,34,0.13)',  color: '#D29922', border: 'rgba(210,153,34,0.45)',  shadow: 'rgba(210,153,34,0.15)' },
   BLOCK:   { bg: 'rgba(248,81,73,0.13)',   color: '#F85149', border: 'rgba(248,81,73,0.45)',   shadow: 'rgba(248,81,73,0.15)' },
+  FAILED:  { bg: 'rgba(248,81,73,0.13)',   color: '#F85149', border: 'rgba(248,81,73,0.45)',   shadow: 'rgba(248,81,73,0.15)' },
   RUNNING: { bg: 'rgba(0,180,216,0.13)',   color: '#00B4D8', border: 'rgba(0,180,216,0.45)',   shadow: 'rgba(0,180,216,0.15)' },
 }
 

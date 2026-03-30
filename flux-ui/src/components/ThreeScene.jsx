@@ -3,7 +3,6 @@ import * as THREE from 'three'
 
 export default function ThreeScene({ style }) {
   const mountRef = useRef(null)
-  const sceneRef = useRef({})
 
   useEffect(() => {
     const mount = mountRef.current
@@ -174,7 +173,7 @@ export default function ThreeScene({ style }) {
       const t = clock.getElapsedTime()
 
       servers.forEach(srv => {
-        const { chaos, led, ledMat, glowMat, freq, amp, rotSpd, phase } = srv.userData
+        const { chaos, ledMat, glowMat, freq, amp, rotSpd, phase } = srv.userData
         srv.position.y = Math.sin(t * freq * Math.PI * 2 + phase) * amp
         srv.rotation.y += rotSpd
 

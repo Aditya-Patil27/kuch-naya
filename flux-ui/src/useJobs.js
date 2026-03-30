@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import * as api from './api';
 
+const MAX_JOBS = 200;
+
 function upsertById(list, update) {
+  if (!update?.id) return list;
+
   const idx = list.findIndex((j) => j.id === update.id);
-  if (idx === -1) return [update, ...list];
+  if (idx === -1) return [update, ...list].slice(0, MAX_JOBS);
+
   const next = [...list];
   next[idx] = { ...next[idx], ...update };
-  return next;
+  return next.slice(0, MAX_JOBS);
 }
 
 export function useJobs() {
@@ -14,6 +19,7 @@ export function useJobs() {
   const [wsStatus, setWsStatus] = useState('disconnected');
   const wsRef = useRef(null);
   const retryRef = useRef(null);
+  const retryDelayRef = useRef(1000);
 
   useEffect(() => {
     let mounted = true;
@@ -27,11 +33,17 @@ export function useJobs() {
       });
 
     function connect() {
+      if (!mounted) return;
+
       setWsStatus('connecting');
       const ws = new WebSocket(api.wsUrl());
       wsRef.current = ws;
 
-      ws.onopen = () => setWsStatus('connected');
+      ws.onopen = () => {
+        if (!mounted) return;
+        retryDelayRef.current = 1000;
+        setWsStatus('connected');
+      };
 
       ws.onmessage = (evt) => {
         try {
@@ -53,12 +65,25 @@ export function useJobs() {
       };
 
       ws.onclose = () => {
+        if (!mounted) return;
         setWsStatus('disconnected');
-        retryRef.current = setTimeout(connect, 3000);
+
+        const jitter = Math.floor(Math.random() * 250);
+        const nextDelay = Math.min(retryDelayRef.current * 2, 30000);
+        const delay = retryDelayRef.current + jitter;
+        retryDelayRef.current = nextDelay;
+
+        retryRef.current = setTimeout(connect, delay);
       };
 
       ws.onerror = () => {
+        if (!mounted) return;
         setWsStatus('error');
+        try {
+          ws.close();
+        } catch {
+          // Ignore close errors.
+        }
       };
     }
 

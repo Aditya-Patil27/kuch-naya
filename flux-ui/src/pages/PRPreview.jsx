@@ -139,6 +139,38 @@ function getSourceColor(type) {
 }
 
 function MarkdownRenderer({ content }) {
+  const renderInline = (text, keyPrefix) => {
+    const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+    return parts.map((part, index) => {
+      const key = `${keyPrefix}-${index}`
+      if (!part) return null
+
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={key}>{part.slice(2, -2)}</strong>
+      }
+
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return (
+          <code
+            key={key}
+            style={{
+              background:'#f6f8fa',
+              border:'1px solid #D0D7DE',
+              borderRadius:'4px',
+              padding:'2px 6px',
+              fontFamily:"'JetBrains Mono', monospace",
+              fontSize:'12px',
+            }}
+          >
+            {part.slice(1, -1)}
+          </code>
+        )
+      }
+
+      return <span key={key}>{part}</span>
+    })
+  }
+
   const lines = content.split('\n')
   return (
     <div style={{ fontFamily:"Georgia, serif", fontSize:'14px', lineHeight:1.7, color:'#24292F' }}>
@@ -173,11 +205,7 @@ function MarkdownRenderer({ content }) {
         }
         if (line.startsWith('```') || line.endsWith('```')) return null
         if (line.startsWith('---')) return <hr key={i} style={{ border:'none', borderTop:'1px solid #D0D7DE', margin:'12px 0' }} />
-        return <p key={i} style={{ marginBottom:'4px' }} dangerouslySetInnerHTML={{ __html:
-          line
-            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-            .replace(/`([^`]+)`/g, '<code style="background:#f6f8fa;border:1px solid #D0D7DE;border-radius:4px;padding:2px 6px;font-family:JetBrains Mono,monospace;font-size:12px">$1</code>')
-        }} />
+        return <p key={i} style={{ marginBottom:'4px' }}>{renderInline(line, `line-${i}`)}</p>
       })}
     </div>
   )

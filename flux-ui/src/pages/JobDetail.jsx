@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
 import { C, FONTS, MOCK_METRICS, cardBorder } from '../tokens'
 import { VerdictPill, StageBar, GhostBtn } from '../components/UI'
@@ -239,7 +238,7 @@ export default function JobDetail({ setPage }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {MOCK_METRICS.map((m, i) => (
+                  {MOCK_METRICS.map((m) => (
                     <tr key={m.name} style={{ borderTop:`1px solid ${C.border}` }}>
                       <td style={{ padding:'8px 0', fontFamily:FONTS.mono, fontSize:'11px', color:C.muted }}>{m.name}</td>
                       <td style={{ padding:'8px 0', fontFamily:FONTS.mono, fontSize:'11px', color:C.green }}>{m.baseline}</td>

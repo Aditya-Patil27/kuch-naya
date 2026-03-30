@@ -2,9 +2,10 @@ services:
   redis:
     image: redis:7-alpine
     container_name: flux-redis
+    restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -16,12 +17,13 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: flux-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: flux
-      POSTGRES_PASSWORD: flux
-      POSTGRES_DB: flux
+      POSTGRES_USER: ${POSTGRES_USER:-flux}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-flux_local_only_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-flux}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -32,10 +34,11 @@ services:
       retries: 5
 
   ollama:
-    image: ollama/ollama:latest
+    image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
     container_name: flux-ollama
+    restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "127.0.0.1:11434:11434"
     volumes:
       - ollama_data:/root/.ollama
 

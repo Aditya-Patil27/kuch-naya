@@ -1,34 +1,11 @@
-import { useState, useEffect } from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { C, FONTS, MOCK_RUNS, MOCK_ACTIVE_JOBS, cardBorder } from '../tokens'
-import { VerdictPill, StageBar, GhostBtn } from '../components/UI'
+import { useState, useEffect, useMemo } from 'react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
+import { C, FONTS, cardBorder } from '../tokens'
+import { VerdictPill, StageBar } from '../components/UI'
+import { useJobs } from '../useJobs'
 
 const FILTERS = ['ALL','ACTIVE','COMPLETED','FAILED','BLOCKED']
-
-const ALL_JOBS = [
-  ...MOCK_RUNS.map((r, i) => ({
-    id:      `JOB-${2847 - i - 2}`,
-    pr:      r.pr,
-    repo:    r.repo,
-    verdict: r.verdict,
-    p99:     r.p99,
-    dur:     r.dur,
-    time:    r.time,
-    stage:   6,
-  })),
-  ...MOCK_ACTIVE_JOBS.map(j => ({
-    id:      j.id,
-    pr:      j.pr,
-    repo:    j.repo,
-    verdict: 'RUNNING',
-    p99:     '—',
-    dur:     '—',
-    time:    'Now',
-    stage:   j.stage,
-    progress: j.progress,
-    elapsed:  j.elapsed,
-  })),
-]
+const PAGE_SIZE = 10
 
 const DAILY_VOLUME = [
   { day:'Mon', count:23 },
@@ -56,22 +33,78 @@ function ElapsedCounter({ startSecs }) {
 }
 
 export default function JobsQueue({ setPage }) {
+  const { jobs } = useJobs()
   const [filter, setFilter] = useState('ALL')
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [nowMs, setNowMs] = useState(() => Date.now())
 
-  const filtered = ALL_JOBS.filter(j => {
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const allJobs = useMemo(() => (
+    jobs.map((job) => {
+      const status = String(job.status || '').toLowerCase()
+
+      let verdict = 'RUNNING'
+      if (status === 'failed') verdict = 'FAILED'
+      if (status === 'completed') verdict = String(job.verdict || 'PASS').toUpperCase()
+
+      const created = job.created_at ? new Date(job.created_at).getTime() : nowMs
+      const completed = job.completed_at ? new Date(job.completed_at).getTime() : nowMs
+      const durationSecs = Math.max(0, Math.round((completed - created) / 1000))
+      const mins = Math.floor(durationSecs / 60)
+      const secs = durationSecs % 60
+
+      const ageSecs = Math.max(0, Math.round((nowMs - created) / 1000))
+      const time = ageSecs < 60 ? `${ageSecs}s ago` : `${Math.floor(ageSecs / 60)}m ago`
+
+      return {
+        id: job.id,
+        pr: job.pr_number ? `#${job.pr_number}` : '#—',
+        repo: job.repo || 'pending/repo',
+        verdict,
+        p99: typeof job.p99_delta_pct === 'number' ? `${job.p99_delta_pct >= 0 ? '+' : ''}${job.p99_delta_pct.toFixed(1)}%` : '—',
+        dur: `${mins}m ${String(secs).padStart(2, '0')}s`,
+        time,
+        stage: Number(job.stage ?? (status === 'queued' ? 0 : status === 'running' ? 2 : 6)),
+        progress: Number(job.progress ?? (status === 'queued' ? 10 : status === 'running' ? 60 : 100)),
+        elapsed: Math.max(0, Math.round((nowMs - created) / 1000)),
+      }
+    })
+  ), [jobs, nowMs])
+
+  const filtered = useMemo(() => allJobs.filter(j => {
     if (filter === 'ACTIVE' && j.verdict !== 'RUNNING') return false
     if (filter === 'BLOCKED' && j.verdict !== 'BLOCK') return false
-    if (filter === 'FAILED'  && j.verdict !== 'WARN')  return false
-    if (filter === 'COMPLETED' && !['PASS','BLOCK','WARN'].includes(j.verdict)) return false
+    if (filter === 'FAILED'  && j.verdict !== 'FAILED')  return false
+    if (filter === 'COMPLETED' && ['RUNNING'].includes(j.verdict)) return false
     if (search && !j.id.toLowerCase().includes(search.toLowerCase()) &&
         !j.pr.toLowerCase().includes(search.toLowerCase()) &&
         !j.repo.toLowerCase().includes(search.toLowerCase())) return false
     return true
-  })
+  }), [allJobs, filter, search])
 
-  const activeJobs = ALL_JOBS.filter(j => j.verdict === 'RUNNING')
+  const activeJobs = useMemo(() => allJobs.filter(j => j.verdict === 'RUNNING'), [allJobs])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = currentPage > totalPages ? totalPages : currentPage
+  const pageStart = (safePage - 1) * PAGE_SIZE
+  const pagedJobs = filtered.slice(pageStart, pageStart + PAGE_SIZE)
+
+  const completedJobs = allJobs.filter((j) => j.verdict !== 'RUNNING')
+  const passCount = completedJobs.filter((j) => j.verdict === 'PASS').length
+  const blockedCount = completedJobs.filter((j) => j.verdict === 'BLOCK').length
+  const avgDurationSecs = completedJobs.length
+    ? Math.round(completedJobs.reduce((sum, j) => {
+      const [m, s] = String(j.dur || '0m 00s').replace('m', '').replace('s', '').split(' ')
+      return sum + (Number(m) * 60 + Number(s))
+    }, 0) / completedJobs.length)
+    : 0
+  const avgDurationLabel = `${Math.floor(avgDurationSecs / 60)}m ${String(avgDurationSecs % 60).padStart(2, '0')}s`
+  const passRate = completedJobs.length ? `${((passCount / completedJobs.length) * 100).toFixed(1)}%` : '0.0%'
 
   return (
     <div style={{ paddingTop:'56px', background:'#0D1117', minHeight:'100vh' }}>
@@ -96,7 +129,10 @@ export default function JobsQueue({ setPage }) {
               {FILTERS.map(f => (
                 <button
                   key={f}
-                  onClick={() => setFilter(f)}
+                  onClick={() => {
+                    setFilter(f)
+                    setCurrentPage(1)
+                  }}
                   style={{
                     fontFamily:    FONTS.heading,
                     fontSize:      '12px',
@@ -118,7 +154,10 @@ export default function JobsQueue({ setPage }) {
               <div style={{ marginLeft:'auto', position:'relative' }}>
                 <input
                   value={search}
-                  onChange={e => setSearch(e.target.value)}
+                  onChange={e => {
+                    setSearch(e.target.value)
+                    setCurrentPage(1)
+                  }}
                   placeholder="Search job ID, PR, repo…"
                   style={{
                     background:   C.surface,
@@ -188,7 +227,7 @@ export default function JobsQueue({ setPage }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map((job, i) => (
+                  {pagedJobs.map((job, i) => (
                     <tr key={job.id} className="tbl-row"
                       style={{ background:i%2===1?'rgba(0,0,0,0.15)':'transparent', borderBottom:`1px solid ${C.border}`, animation:`fadeUp 0.35s ${i*0.04}s both` }}
                       onClick={() => setPage('job-detail')}>
@@ -196,7 +235,7 @@ export default function JobsQueue({ setPage }) {
                       <td style={{ padding:'10px 14px', fontFamily:FONTS.mono, fontSize:'12px', color:C.text }}>{job.pr}</td>
                       <td style={{ padding:'10px 14px', fontFamily:FONTS.mono, fontSize:'11px', color:C.muted }}>{job.repo}</td>
                       <td style={{ padding:'10px 14px' }}><VerdictPill verdict={job.verdict} /></td>
-                      <td style={{ padding:'10px 14px', fontFamily:FONTS.mono, fontSize:'12px', fontWeight:700, color:job.verdict==='BLOCK'?C.red:job.verdict==='PASS'?C.green:C.muted }}>{job.p99}</td>
+                      <td style={{ padding:'10px 14px', fontFamily:FONTS.mono, fontSize:'12px', fontWeight:700, color:job.verdict==='BLOCK'||job.verdict==='FAILED'?C.red:job.verdict==='PASS'?C.green:C.muted }}>{job.p99}</td>
                       <td style={{ padding:'10px 14px', fontFamily:FONTS.mono, fontSize:'11px', color:C.muted }}>{job.dur}</td>
                       <td style={{ padding:'10px 14px', fontFamily:FONTS.mono, fontSize:'11px', color:C.muted }}>{job.time}</td>
                       <td style={{ padding:'10px 14px' }}>
@@ -213,13 +252,13 @@ export default function JobsQueue({ setPage }) {
 
             {/* Pagination */}
             <div style={{ display:'flex', justifyContent:'center', gap:'6px', marginTop:'16px' }}>
-              {[1,2,3,4,5].map(p => (
+              {Array.from({ length: totalPages }, (_, idx) => idx + 1).slice(0, 10).map(p => (
                 <button key={p} onClick={() => setCurrentPage(p)} style={{
                   width:'32px', height:'32px',
                   borderRadius:'6px',
-                  border: currentPage===p ? `1px solid ${C.teal}` : `1px solid ${C.border}`,
-                  background: currentPage===p ? 'rgba(0,180,216,0.1)' : 'transparent',
-                  color: currentPage===p ? C.teal : C.muted,
+                  border: safePage===p ? `1px solid ${C.teal}` : `1px solid ${C.border}`,
+                  background: safePage===p ? 'rgba(0,180,216,0.1)' : 'transparent',
+                  color: safePage===p ? C.teal : C.muted,
                   fontFamily: FONTS.mono,
                   fontSize: '13px',
                   cursor: 'pointer',
@@ -237,10 +276,10 @@ export default function JobsQueue({ setPage }) {
                 QUICK STATS
               </div>
               {[
-                { label:'Total Jobs',    value:'1,247', color:C.teal },
-                { label:'Pass Rate',     value:'84.2%', color:C.green },
-                { label:'Avg Duration',  value:'4m 23s', color:C.text },
-                { label:'Blocked Today', value:'3',     color:C.red },
+                { label:'Total Jobs',    value:String(allJobs.length), color:C.teal },
+                { label:'Pass Rate',     value:passRate, color:C.green },
+                { label:'Avg Duration',  value:avgDurationLabel, color:C.text },
+                { label:'Blocked Jobs',  value:String(blockedCount), color:C.red },
               ].map(s => (
                 <div key={s.label} style={{ display:'flex', justifyContent:'space-between', padding:'8px 0', borderBottom:`1px solid ${C.border}` }}>
                   <span style={{ fontFamily:FONTS.mono, fontSize:'11px', color:C.muted }}>{s.label}</span>

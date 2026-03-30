@@ -1,5 +1,5 @@
 const path = require('path');
-const { execSync } = require('child_process');
+const { spawn } = require('child_process');
 
 function parseDurationToMs(raw, unit) {
   const value = Number(raw);
@@ -31,48 +31,143 @@ function parseK6Summary(output) {
   };
 }
 
-function runK6Script({ script, targetUrl, vus = 50, duration = '30s' }) {
-  const scriptsPath = path.resolve(process.cwd(), 'k6');
-  const command = [
-    'docker run --rm',
-    '--network host',
-    `-v "${scriptsPath}:/scripts"`,
-    '-e TARGET_URL=' + targetUrl,
-    '-e VUS=' + vus,
-    '-e DURATION=' + duration,
-    'grafana/k6 run',
-    `/scripts/${script}`,
-  ].join(' ');
+function runCommand(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, {
+      cwd: options.cwd,
+      env: { ...process.env, ...(options.env || {}) },
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
 
-  const output = execSync(command, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+    let stdout = '';
+    let stderr = '';
+
+    child.stdout.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+
+    child.stderr.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+
+    child.on('error', (error) => {
+      reject(error);
+    });
+
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve({ stdout, stderr });
+        return;
+      }
+
+      const details = `${stdout}\n${stderr}`.trim();
+      reject(new Error(`${command} ${args.join(' ')} failed with code ${code}${details ? `: ${details}` : ''}`));
+    });
+  });
+}
+
+function dockerHostArgs() {
+  if (process.platform === 'linux') {
+    return ['--add-host', 'host.docker.internal:host-gateway'];
+  }
+  return [];
+}
+
+function hashedPort(seed, base, range) {
+  const text = String(seed || 'flux');
+  let hash = 0;
+  for (let i = 0; i < text.length; i += 1) {
+    hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  }
+  return base + (Math.abs(hash) % range);
+}
+
+async function runK6Script({ script, targetUrl, vus = 50, duration = '30s' }) {
+  const scriptsPath = path.resolve(process.cwd(), 'k6');
+  const args = [
+    'run',
+    '--rm',
+    ...dockerHostArgs(),
+    '-v',
+    `${scriptsPath}:/scripts:ro`,
+    '-e',
+    `TARGET_URL=${targetUrl}`,
+    '-e',
+    `VUS=${vus}`,
+    '-e',
+    `DURATION=${duration}`,
+    'grafana/k6',
+    'run',
+    `/scripts/${script}`,
+  ];
+
+  const { stdout, stderr } = await runCommand('docker', args);
+  const output = `${stdout}\n${stderr}`;
   return parseK6Summary(output);
 }
 
+function normalizeDiffUrl(diffUrl) {
+  let parsed;
+  try {
+    parsed = new URL(diffUrl);
+  } catch {
+    throw new Error('Diff URL is invalid');
+  }
+
+  const allowedHosts = new Set(['github.com', 'api.github.com', 'raw.githubusercontent.com']);
+
+  if (parsed.protocol !== 'https:' || !allowedHosts.has(parsed.hostname)) {
+    throw new Error('Diff URL host is not allowed');
+  }
+
+  return parsed.toString();
+}
+
 async function fetchDiff(diffUrl) {
-  const res = await fetch(diffUrl);
-  if (!res.ok) {
-    throw new Error(`Unable to fetch diff: HTTP ${res.status}`);
+  const safeUrl = normalizeDiffUrl(diffUrl);
+  const timeoutMs = Number(process.env.DIFF_FETCH_TIMEOUT_MS || 15000);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const res = await fetch(safeUrl, { signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`Unable to fetch diff: HTTP ${res.status}`);
+    }
+    return res.text();
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Diff fetch timed out');
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
-  return res.text();
 }
 
-function buildToxiRunCommand(name, listenPort) {
-  if (process.platform === 'win32') {
-    return `docker run -d --name ${name} -p 8474:8474 -p ${listenPort}:${listenPort} ghcr.io/shopify/toxiproxy`;
-  }
-  return `docker run -d --name ${name} --network host ghcr.io/shopify/toxiproxy`;
-}
-
-async function startToxiproxy(jobId, targetPort) {
+async function startToxiproxy(jobId, targetHost, targetPort) {
   const name = `flux-toxi-${String(jobId).replace(/[^a-zA-Z0-9_.-]/g, '').slice(0, 24)}`;
-  const listenPort = 13001;
+  const adminPort = hashedPort(`${jobId}-admin`, 18000, 1000);
+  const listenPort = hashedPort(`${jobId}-listen`, 13000, 1000);
 
-  execSync(buildToxiRunCommand(name, listenPort), { stdio: 'pipe' });
+  const runArgs = [
+    'run',
+    '-d',
+    '--name',
+    name,
+    '-p',
+    `${adminPort}:8474`,
+    '-p',
+    `${listenPort}:${listenPort}`,
+    'ghcr.io/shopify/toxiproxy',
+  ];
 
-  // Give toxiproxy a brief moment to boot.
+  await runCommand('docker', runArgs);
+
   await new Promise((resolve) => setTimeout(resolve, 1200));
 
-  const base = 'http://127.0.0.1:8474';
+  const base = `http://127.0.0.1:${adminPort}`;
 
   const proxyRes = await fetch(`${base}/proxies`, {
     method: 'POST',
@@ -80,7 +175,7 @@ async function startToxiproxy(jobId, targetPort) {
     body: JSON.stringify({
       name: 'app',
       listen: `0.0.0.0:${listenPort}`,
-      upstream: `127.0.0.1:${targetPort}`,
+      upstream: `${targetHost}:${targetPort}`,
     }),
   });
 
@@ -107,9 +202,9 @@ async function startToxiproxy(jobId, targetPort) {
   return { name, listenPort };
 }
 
-function cleanupToxiproxy(containerName) {
+async function cleanupToxiproxy(containerName) {
   try {
-    execSync(`docker rm -f ${containerName}`, { stdio: 'ignore' });
+    await runCommand('docker', ['rm', '-f', containerName]);
   } catch {
     // Cleanup must never fail the whole job.
   }
@@ -123,13 +218,14 @@ function computeVerdict(deltaPct) {
 
 async function runJob(payload, onStage) {
   const targetPort = Number(process.env.APP_TARGET_PORT || 3001);
-  const targetBase = `http://localhost:${targetPort}`;
+  const targetHost = process.env.APP_TARGET_HOST || 'host.docker.internal';
+  const targetBase = process.env.APP_TARGET_BASE_URL || `http://${targetHost}:${targetPort}`;
 
   onStage?.('diff', { progress: 15 });
   const diffText = await fetchDiff(payload.diff_url);
 
   onStage?.('baseline', { progress: 30 });
-  const baseline = runK6Script({
+  const baseline = await runK6Script({
     script: 'baseline.js',
     targetUrl: targetBase,
     vus: Number(process.env.K6_VUS || 50),
@@ -137,20 +233,20 @@ async function runJob(payload, onStage) {
   });
 
   onStage?.('toxiproxy', { progress: 45 });
-  const tox = await startToxiproxy(payload.id, targetPort);
+  const tox = await startToxiproxy(payload.id, targetHost, targetPort);
 
   let chaos;
   try {
     onStage?.('chaos', { progress: 65 });
-    chaos = runK6Script({
+    chaos = await runK6Script({
       script: 'chaos.js',
-      targetUrl: `http://localhost:${tox.listenPort}`,
+      targetUrl: `http://${targetHost}:${tox.listenPort}`,
       vus: Number(process.env.K6_VUS || 50),
       duration: process.env.K6_DURATION || '30s',
     });
   } finally {
     onStage?.('cleanup', { progress: 75 });
-    cleanupToxiproxy(tox.name);
+    await cleanupToxiproxy(tox.name);
   }
 
   const p99DeltaPct = baseline.p99 > 0

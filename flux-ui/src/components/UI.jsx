@@ -35,7 +35,6 @@ export function StageBar({ activeStage = 0 }) {
       {STAGES.map((s, i) => {
         const past   = i < activeStage
         const active = i === activeStage
-        const future = i > activeStage
         return (
           <div key={s} style={{ flex: 1 }}>
             <div style={{

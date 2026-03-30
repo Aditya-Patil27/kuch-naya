@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { C, FONTS, cardBorder } from '../tokens'
 import ThreeScene from '../components/ThreeScene'
 import { VerdictPill, StageBar, StatCard, SectionHeader, StatusDot } from '../components/UI'
@@ -34,32 +34,40 @@ function DeltaCell({ delta }) {
 
 export default function Dashboard({ setPage }) {
   const { jobs, activeJobs, completedJobs, blockedCount } = useJobs()
+  const [nowMs, setNowMs] = useState(() => Date.now())
 
-  const runs = jobs.slice(0, 10).map((job) => {
-    const status = String(job.status || '').toLowerCase()
-    const verdict = String(job.verdict || (status === 'failed' ? 'BLOCK' : status === 'completed' ? 'PASS' : 'RUNNING')).toUpperCase()
-    const delta = job.p99_delta_pct
-    const p99 = typeof delta === 'number' ? `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%` : '—'
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 1000)
+    return () => clearInterval(timer)
+  }, [])
 
-    const created = job.created_at ? new Date(job.created_at).getTime() : Date.now()
-    const completed = job.completed_at ? new Date(job.completed_at).getTime() : Date.now()
-    const durationSecs = Math.max(0, Math.round((completed - created) / 1000))
-    const mins = Math.floor(durationSecs / 60)
-    const secs = durationSecs % 60
+  const runs = useMemo(() => (
+    jobs.slice(0, 10).map((job) => {
+      const status = String(job.status || '').toLowerCase()
+      const verdict = String(job.verdict || (status === 'failed' ? 'BLOCK' : status === 'completed' ? 'PASS' : 'RUNNING')).toUpperCase()
+      const delta = job.p99_delta_pct
+      const p99 = typeof delta === 'number' ? `${delta >= 0 ? '+' : ''}${delta.toFixed(1)}%` : '—'
 
-    const ageSecs = Math.max(0, Math.round((Date.now() - created) / 1000))
-    const age = ageSecs < 60 ? `${ageSecs}s ago` : `${Math.floor(ageSecs / 60)}m ago`
+      const created = job.created_at ? new Date(job.created_at).getTime() : nowMs
+      const completed = job.completed_at ? new Date(job.completed_at).getTime() : nowMs
+      const durationSecs = Math.max(0, Math.round((completed - created) / 1000))
+      const mins = Math.floor(durationSecs / 60)
+      const secs = durationSecs % 60
 
-    return {
-      id: job.id,
-      pr: job.pr_number ? `#${job.pr_number}` : '#—',
-      title: job.repo || 'pending/repo',
-      verdict,
-      p99,
-      dur: `${mins}m ${String(secs).padStart(2, '0')}s`,
-      time: age,
-    }
-  })
+      const ageSecs = Math.max(0, Math.round((nowMs - created) / 1000))
+      const age = ageSecs < 60 ? `${ageSecs}s ago` : `${Math.floor(ageSecs / 60)}m ago`
+
+      return {
+        id: job.id,
+        pr: job.pr_number ? `#${job.pr_number}` : '#—',
+        title: job.repo || 'pending/repo',
+        verdict,
+        p99,
+        dur: `${mins}m ${String(secs).padStart(2, '0')}s`,
+        time: age,
+      }
+    })
+  ), [jobs, nowMs])
 
   const counts = {
     tested: completedJobs.length,
@@ -106,7 +114,7 @@ export default function Dashboard({ setPage }) {
 
             {/* PR Analyses Table (left 60%) */}
             <div>
-              <SectionHeader title="Recent PR Analyses" action="REFRESH" onAction={() => {}} />
+              <SectionHeader title="Recent PR Analyses" action="REFRESH" onAction={() => setNowMs(Date.now())} />
               <div style={{
                 ...cardBorder(),
                 overflow:'hidden',
@@ -174,8 +182,8 @@ export default function Dashboard({ setPage }) {
                 {activeJobs.map((job, i) => {
                   const stage = Number(job.stage ?? (String(job.status || '').toLowerCase() === 'queued' ? 0 : 2))
                   const progress = Number(job.progress ?? (String(job.status || '').toLowerCase() === 'queued' ? 10 : 55))
-                  const created = job.created_at ? new Date(job.created_at).getTime() : Date.now()
-                  const elapsed = Math.max(0, Math.round((Date.now() - created) / 1000))
+                  const created = job.created_at ? new Date(job.created_at).getTime() : nowMs
+                  const elapsed = Math.max(0, Math.round((nowMs - created) / 1000))
 
                   return (
                   <div key={job.id} style={{

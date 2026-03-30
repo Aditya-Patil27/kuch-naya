@@ -62,11 +62,26 @@ Create `.env` at repo root from `.env.example` and fill values:
 GITHUB_APP_ID=
 GITHUB_PRIVATE_KEY_PATH=./private-key.pem
 GITHUB_WEBHOOK_SECRET=
+API_KEY=
 
-DATABASE_URL=postgres://flux:flux@localhost:5432/flux
+POSTGRES_USER=flux
+POSTGRES_PASSWORD=flux_local_only_change_me
+POSTGRES_DB=flux
+DATABASE_URL=postgres://flux:flux_local_only_change_me@localhost:5432/flux
 REDIS_URL=redis://localhost:6379
 PORT=3000
 APP_TARGET_PORT=3001
+APP_TARGET_HOST=host.docker.internal
+APP_TARGET_BASE_URL=
+
+JOB_MAX_ATTEMPTS=3
+JOB_RETRY_DELAY_MS=5000
+DIFF_FETCH_TIMEOUT_MS=15000
+
+K6_VUS=50
+K6_DURATION=30s
+K6_TARGET_PATH=/api/health
+K6_TARGET_METHOD=GET
 
 OLLAMA_URL=http://localhost:11434
 OLLAMA_MODEL=qwen3:8b
@@ -112,6 +127,8 @@ Services started:
 1. Redis (`redis:7-alpine`)
 2. Postgres (`postgres:16-alpine`)
 3. Ollama (`ollama/ollama:latest`)
+
+Ports are bound to `127.0.0.1` only for safer local development.
 
 Pull model inside container if needed:
 
