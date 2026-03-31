@@ -8,7 +8,8 @@ function buildPRComment({ payload, result, analysis }) {
     '',
     `**Job:** \`${payload.id}\`  `,
     `**Repo:** \`${payload.repo}\`  `,
-    `**PR:** #${payload.pr_number}`,
+    `**PR:** #${payload.pr_number}  `,
+    `**Mode:** ${result.runMode || payload.run_mode || 'single'} (${result.shardCount || payload.shard_count || 1} shard(s))`,
     '',
     '| Metric | Baseline | PR (Chaos) | Delta |',
     '|---|---:|---:|---:|',
@@ -18,21 +19,22 @@ function buildPRComment({ payload, result, analysis }) {
     `| Error Rate | ${result.baseline.errorRate.toFixed(2)}% | ${result.chaos.errorRate.toFixed(2)}% | ${(result.chaos.errorRate - result.baseline.errorRate).toFixed(2)}% |`,
     '',
     '### Mechanism',
-    analysis.mechanism,
+    analysis.mechanism || 'Analysis unavailable',
     '',
     '### Suggested Fix',
     '```',
-    analysis.suggestedFix,
+    analysis.suggestedFix || 'Review hot paths manually',
     '```',
     '',
-    `**Confidence:** ${analysis.confidence}`,
-    `**Summary:** ${analysis.summary}`,
+    `**Confidence:** ${analysis.confidence || 'LOW'}`,
+    `**Summary:** ${analysis.summary || 'Performance metrics collected.'}`,
   ].join('\n');
 }
 
 async function reportToGitHub({ payload, result, analysis }) {
+  if (!payload.installation_id) throw new Error('Missing installation_id in job payload');
   const octokit = await require('../server/github').getOctokit(payload.installation_id);
-  const summary = `${result.verdict} | P99 delta ${result.p99DeltaPct.toFixed(2)}% | ${analysis.summary}`;
+  const summary = `${result.verdict} | P99 delta ${result.p99DeltaPct.toFixed(2)}% | ${analysis.summary || 'Metrics collected.'}`;
 
   await completeCheckRun(octokit, {
     owner: payload.owner,

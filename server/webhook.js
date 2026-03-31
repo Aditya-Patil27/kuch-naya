@@ -3,6 +3,8 @@ const { nanoid } = require('nanoid');
 const { getOctokit, createCheckRun } = require('./github');
 const { pg } = require('./db');
 const { broadcastJob } = require('./ws');
+const { validateWebhookPayload } = require('./validation');
+const { logInfo, logError } = require('./log');
 
 function verifySignature(rawBody, signatureHeader, secret) {
   if (!signatureHeader || !secret) return false;
@@ -39,10 +41,18 @@ async function processPullRequestEvent(payload, queue, deliveryId) {
   const repo = `${owner}/${repoName}`;
   const headSha = payload.pull_request?.head?.sha;
   const diffUrl = payload.pull_request?.diff_url;
+  const shardCount = parsePositiveInt(process.env.RUNNER_SHARD_COUNT, 1);
+  const runMode = shardCount > 1 ? 'distributed' : 'single';
 
   if (!installationId || !prNumber || !owner || !repoName || !headSha || !diffUrl) {
     throw new Error('Webhook payload missing required pull_request fields');
   }
+
+  const tenantLookup = await pg.query(
+    'SELECT id FROM tenants WHERE lower(github_org) = lower($1) LIMIT 1',
+    [owner]
+  );
+  const tenantId = tenantLookup.rows[0]?.id || 'default';
 
   const existing = await pg.query(
     'SELECT id FROM jobs WHERE delivery_id = $1 LIMIT 1',
@@ -59,11 +69,37 @@ async function processPullRequestEvent(payload, queue, deliveryId) {
 
     const inserted = await pg.query(
       `INSERT INTO jobs (
-        id, delivery_id, pr_number, repo, head_sha, installation_id, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'queued')
+        id, delivery_id, tenant_id, pr_number, repo, head_sha, installation_id, status, run_mode, shard_count, metadata
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, 'queued', $8, $9, $10::jsonb)
       ON CONFLICT (delivery_id) DO NOTHING
       RETURNING id`,
-      [id, deliveryId, prNumber, repo, headSha, String(installationId)]
+      [
+        id,
+        deliveryId,
+        tenantId,
+        prNumber,
+        repo,
+        headSha,
+        String(installationId),
+        runMode,
+        shardCount,
+        JSON.stringify({
+          source: 'github-webhook',
+          queuePayload: {
+            id,
+            pr_number: prNumber,
+            repo,
+            head_sha: headSha,
+            installation_id: String(installationId),
+            diff_url: diffUrl,
+            owner,
+            repoName,
+            run_mode: runMode,
+            shard_count: shardCount,
+            tenant_id: tenantId,
+          },
+        }),
+      ]
     );
 
     if (!inserted.rows.length) {
@@ -85,6 +121,7 @@ async function processPullRequestEvent(payload, queue, deliveryId) {
 
     const queuedPayload = {
       id,
+      tenant_id: tenantId,
       pr_number: prNumber,
       repo,
       head_sha: headSha,
@@ -94,6 +131,8 @@ async function processPullRequestEvent(payload, queue, deliveryId) {
       stage: 0,
       progress: 5,
       diff_url: diffUrl,
+      run_mode: runMode,
+      shard_count: shardCount,
     };
 
     broadcastJob('job:queued', queuedPayload);
@@ -169,21 +208,40 @@ function createWebhookHandler(queue) {
       return res.status(202).json({ ignored: true, reason: `event:${event || 'unknown'}` });
     }
 
+    const validation = validateWebhookPayload(payload);
+    if (!validation.ok) {
+      return res.status(422).json({
+        error: 'Invalid pull_request payload',
+        details: validation.errors,
+      });
+    }
+
     try {
-      const result = await processPullRequestEvent(payload, queue, deliveryId);
-
-      if (result.status === 'ignored') {
-        return res.status(202).json({ ignored: true, reason: result.reason });
-      }
-
-      if (result.status === 'duplicate') {
-        return res.status(200).json({ duplicate: true, id: result.id });
-      }
-
-      return res.status(202).json({ accepted: true, id: result.id });
+      res.status(202).json({ accepted: true });
+      
+      processPullRequestEvent(payload, queue, deliveryId)
+        .then(result => logInfo('webhook_processed', {
+          requestId: req.requestId,
+          deliveryId,
+          status: result.status,
+          id: result.id,
+        }))
+        .catch(error => logError('webhook_processing_failed', {
+          requestId: req.requestId,
+          deliveryId,
+          error: error.message,
+        }));
+      
+      return;
     } catch (error) {
-      console.error('[webhook] processing failed:', error.message);
-      return res.status(500).json({ error: 'Webhook processing failed' });
+      logError('webhook_dispatch_failed', {
+        requestId: req.requestId,
+        deliveryId,
+        error: error.message,
+      });
+      if (!res.headersSent) {
+        return res.status(500).json({ error: 'Webhook processing failed' });
+      }
     }
   };
 }

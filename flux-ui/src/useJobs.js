@@ -32,11 +32,45 @@ export function useJobs() {
         if (mounted) setJobs([]);
       });
 
-    function connect() {
+    function scheduleReconnect() {
+      if (!mounted) return;
+
+      const jitter = Math.floor(Math.random() * 250);
+      const nextDelay = Math.min(retryDelayRef.current * 2, 30000);
+      const delay = retryDelayRef.current + jitter;
+      retryDelayRef.current = nextDelay;
+
+      retryRef.current = setTimeout(() => {
+        connect().catch(() => {
+          // Retry scheduling is already handled inside connect paths.
+        });
+      }, delay);
+    }
+
+    async function connect() {
       if (!mounted) return;
 
       setWsStatus('connecting');
-      const ws = new WebSocket(api.wsUrl());
+
+      let wsAddress;
+      try {
+        const wsAuth = await api.getWsToken();
+        if (wsAuth?.required) {
+          if (!wsAuth.token) {
+            throw new Error('Missing websocket token');
+          }
+          wsAddress = api.wsUrl(wsAuth.token);
+        } else {
+          wsAddress = api.wsUrl();
+        }
+      } catch {
+        if (!mounted) return;
+        setWsStatus('error');
+        scheduleReconnect();
+        return;
+      }
+
+      const ws = new WebSocket(wsAddress);
       wsRef.current = ws;
 
       ws.onopen = () => {
@@ -56,7 +90,7 @@ export function useJobs() {
             return;
           }
 
-          if (event === 'job:update' || event === 'job:stage' || event === 'job:complete' || event === 'job:error') {
+          if (event === 'job:update' || event === 'job:stage' || event === 'job:complete' || event === 'job:error' || event === 'job:dead-letter') {
             setJobs((prev) => upsertById(prev, data));
           }
         } catch {
@@ -67,13 +101,7 @@ export function useJobs() {
       ws.onclose = () => {
         if (!mounted) return;
         setWsStatus('disconnected');
-
-        const jitter = Math.floor(Math.random() * 250);
-        const nextDelay = Math.min(retryDelayRef.current * 2, 30000);
-        const delay = retryDelayRef.current + jitter;
-        retryDelayRef.current = nextDelay;
-
-        retryRef.current = setTimeout(connect, delay);
+        scheduleReconnect();
       };
 
       ws.onerror = () => {
@@ -87,7 +115,11 @@ export function useJobs() {
       };
     }
 
-    connect();
+    connect().catch(() => {
+      if (!mounted) return;
+      setWsStatus('error');
+      scheduleReconnect();
+    });
 
     return () => {
       mounted = false;

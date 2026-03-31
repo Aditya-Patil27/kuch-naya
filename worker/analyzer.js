@@ -1,3 +1,4 @@
+const { logError } = require('../server/log');
 const OLLAMA_TIMEOUT_MS = Number(process.env.OLLAMA_TIMEOUT_MS || 10000);
 
 function stripJsonFences(text) {
@@ -7,8 +8,12 @@ function stripJsonFences(text) {
     .trim();
 }
 
+function stripThinkTags(text) {
+  return String(text || '').replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+
 function parseJsonLike(text) {
-  const cleaned = stripJsonFences(text);
+  const cleaned = stripJsonFences(stripThinkTags(text));
 
   try {
     return JSON.parse(cleaned);
@@ -43,28 +48,29 @@ async function analyzeWithOllama(prompt) {
   const endpoint = `${process.env.OLLAMA_URL || 'http://localhost:11434'}/api/generate`;
   const model = process.env.OLLAMA_MODEL || 'qwen3:8b';
 
-  let timeoutHandle;
-  const timeout = new Promise((_, reject) => {
-    timeoutHandle = setTimeout(() => reject(new Error('Ollama timeout')), OLLAMA_TIMEOUT_MS);
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), OLLAMA_TIMEOUT_MS);
 
-  const request = fetch(endpoint, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ model, prompt, stream: false }),
-  }).then(async (res) => {
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ model, prompt, stream: false }),
+      signal: controller.signal
+    });
+    
     if (!res.ok) {
       throw new Error(`Ollama failed: HTTP ${res.status}`);
     }
+    
     const data = await res.json();
-    return parseJsonLike(data.response);
-  });
-
-  try {
-    const parsed = await Promise.race([request, timeout]);
+    const parsed = parseJsonLike(data.response);
     return { ...parsed, provider: 'ollama' };
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('Ollama timeout');
+    throw error;
   } finally {
-    clearTimeout(timeoutHandle);
+    clearTimeout(timer);
   }
 }
 
@@ -130,7 +136,7 @@ async function analyze(payload) {
     try {
       return await analyzeWithGroq(prompt);
     } catch (error) {
-      console.error('[analyzer] groq failed:', error.message);
+      logError('analyzer_failed', { provider: 'groq', error: error.message });
       return fallbackAnalysis(payload);
     }
   }
@@ -139,7 +145,7 @@ async function analyze(payload) {
     try {
       return await analyzeWithOllama(prompt);
     } catch (error) {
-      console.error('[analyzer] ollama failed:', error.message);
+      logError('analyzer_failed', { provider: 'ollama', error: error.message });
       return fallbackAnalysis(payload);
     }
   }
@@ -147,11 +153,11 @@ async function analyze(payload) {
   try {
     return await analyzeWithOllama(prompt);
   } catch (ollamaError) {
-    console.error('[analyzer] ollama failed in auto mode:', ollamaError.message);
+    logError('analyzer_failed', { provider: 'ollama_fallback', error: ollamaError.message });
     try {
       return await analyzeWithGroq(prompt);
     } catch (groqError) {
-      console.error('[analyzer] groq failed in auto mode:', groqError.message);
+      logError('analyzer_failed', { provider: 'groq_fallback', error: groqError.message });
       return fallbackAnalysis(payload);
     }
   }

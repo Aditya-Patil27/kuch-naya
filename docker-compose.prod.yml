@@ -1,0 +1,90 @@
+services:
+  # ==================================
+  # CORE SERVICES
+  # ==================================
+  redis:
+    image: redis:7-alpine
+    container_name: flux-prod-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: flux-prod-postgres
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - pg_prod_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-flux} -d ${POSTGRES_DB:-flux}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ${OLLAMA_IMAGE:-ollama/ollama:latest}
+    container_name: flux-prod-ollama
+    restart: unless-stopped
+    deploy:
+      resources:
+        reservations:
+          devices:
+            # Enable GPU if available. If unsupported, docker will fallback securely. 
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ollama_prod_data:/root/.ollama
+
+  # ==================================
+  # FLUX RUNTIME (Docker-In-Docker)
+  # ==================================
+  flux-api:
+    build: .
+    container_name: flux-prod-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://flux-prod-redis:6379
+      - DATABASE_URL=postgres://${POSTGRES_USER:-flux}:${POSTGRES_PASSWORD:-flux_local_only_change_me}@flux-prod-postgres:5432/${POSTGRES_DB:-flux}
+      - OLLAMA_URL=http://flux-prod-ollama:11434
+    ports:
+      - "${PORT:-3000}:3000"
+    command: ["node", "server/index.js"]
+
+  flux-worker:
+    build: .
+    container_name: flux-prod-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      - REDIS_URL=redis://flux-prod-redis:6379
+      - DATABASE_URL=postgres://${POSTGRES_USER:-flux}:${POSTGRES_PASSWORD:-flux_local_only_change_me}@flux-prod-postgres:5432/${POSTGRES_DB:-flux}
+      - OLLAMA_URL=http://flux-prod-ollama:11434
+    volumes:
+      # CRITICAL: Mount host docker socket to allow the worker to spawn Toxiproxy and k6!
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["node", "worker/index.js"]
+
+volumes:
+  redis_prod_data:
+  pg_prod_data:
+  ollama_prod_data:

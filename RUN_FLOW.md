@@ -41,12 +41,48 @@ Minimum required for local run:
 4. APP_TARGET_PORT
 5. OLLAMA_URL
 6. OLLAMA_MODEL
+7. ALLOWED_TARGET_HOSTS
 
 Required only for GitHub App flow:
 
 1. GITHUB_APP_ID
 2. GITHUB_PRIVATE_KEY_PATH
 3. GITHUB_WEBHOOK_SECRET
+
+Optional security controls:
+
+1. API_KEY
+2. WS_TOKEN_SECRET
+3. WS_TOKEN_TTL_SECONDS
+4. AUTH_JWT_SECRET
+5. AUTH_TOKEN_TTL
+6. AUTH_ISSUER
+7. AUTH_AUDIENCE
+8. AUTH_MODE
+9. OIDC_ISSUER
+10. OIDC_AUDIENCE
+11. OIDC_JWKS_URI
+
+If API_KEY is set on server, set frontend env too (inside `flux-ui/.env.local`):
+
+1. VITE_API_BASE=http://localhost:3000
+2. VITE_API_KEY=<same value as API_KEY>
+
+Optional for JWT auth testing:
+
+1. VITE_BEARER_TOKEN=<token from /api/auth/token>
+
+OIDC/JWKS mode (external IdP):
+
+1. Set `AUTH_MODE=oidc` (or `auto`).
+2. Set `OIDC_ISSUER`, `OIDC_AUDIENCE`, and optional `OIDC_JWKS_URI`.
+3. Use a bearer token from your IdP in frontend or API calls.
+
+Optional distributed-run controls:
+
+1. RUNNER_SHARD_COUNT (set > 1 to enable distributed shard mode)
+2. SHARD_MAX_ATTEMPTS
+3. WORKER_CONCURRENCY
 
 ## 3. Start Infrastructure
 
@@ -101,6 +137,7 @@ Worker readiness:
 
 1. Worker terminal should print readiness log
 2. No repeated redis/db connection errors
+3. No target-host allowlist errors from `ALLOWED_TARGET_HOSTS`
 
 ## 6. Optional GitHub Webhook Test Flow
 
@@ -123,6 +160,17 @@ From repo root:
 4. node --check server/webhook.js
 5. node --check worker/runner.js
 6. npm audit --omit=dev --json
+
+Optional auth token flow for RBAC testing:
+
+1. curl -X POST http://localhost:3000/api/auth/token -H "x-api-key: <API_KEY>" -H "content-type: application/json" -d '{"sub":"alice","role":"operator","tenantId":"default"}'
+2. Use returned bearer token on protected APIs: `Authorization: Bearer <token>`
+
+Operational visibility endpoints:
+
+1. GET /api/metrics
+2. GET /api/jobs/dead-letter
+3. GET /api/runners
 
 ## 8. Stop and Cleanup
 
@@ -150,10 +198,16 @@ Worker cannot run load tests:
 1. Confirm docker daemon is running
 2. Confirm k6 files exist in k6 folder
 3. Confirm APP_TARGET_PORT points to target app
+4. Confirm APP_TARGET_HOST or APP_TARGET_BASE_URL hostname is present in ALLOWED_TARGET_HOSTS
 
 Webhook 401 invalid signature:
 
 1. Verify GITHUB_WEBHOOK_SECRET matches GitHub App setting
+
+WebSocket unauthorized when API_KEY is enabled:
+
+1. Ensure frontend has `VITE_API_KEY` set in `flux-ui/.env.local`
+2. Restart frontend dev server after updating env
 
 ## 10. Go/No-Go for Testing
 

@@ -1,219 +1,95 @@
-# FLUX Hackathon Setup
+# FLUX: AI-Powered Chaos Engineering Reviewer
 
-Local-first PR chaos reviewer with deterministic PASS/WARN/BLOCK checks.
+FLUX listens to GitHub pull request webhooks, runs baseline + chaos performance checks (using Toxiproxy and k6), computes verdicts from measured metrics via Ollama, and publishes the results directly back to your GitHub PR.
 
-## Overview
-FLUX listens to GitHub pull request webhooks, runs baseline + chaos performance checks, computes verdicts from measured metrics, and publishes:
+## Architecture
+- **Backend:** Node.js + Express, Bull Queue, Redis, Postgres
+- **AI Analysis:** Ollama (`qwen3:8b` local) → Groq Fallback
+- **Chaos Injection:** Toxiproxy + k6 via Docker
+- **Frontend Dashboard:** React, Three.js, Recharts (Integrated inside Express via Vite Multi-stage build)
 
-1. GitHub check run (`flux/chaos-review`)
-2. GitHub PR comment with findings
-3. Live dashboard events over WebSocket
+---
 
-Current repo layout:
+## 🚀 Production Deployment (VPS)
 
-```text
-server/           Express API + webhook + GitHub integration + WS
-worker/           Bull queue processor + k6 + Toxiproxy + AI analyzer
-k6/               baseline and chaos scripts
-db/               Postgres init schema
-flux-ui/          React dashboard
-docker-compose.yml
-package.json
-```
+You can run FLUX on any Linux Virtual Private Server (e.g., Amazon EC2, DigitalOcean Droplet, Linode) using Docker. Because FLUX securely orchestrates temporary `toxiproxy` and `k6` test containers, the runtime requires access to the host's Docker socket.
 
-## Prerequisites
+### Prerequisites
+1. A Linux machine with Docker and Docker Compose installed.
 
-1. Node.js 20+
-2. Docker Desktop running
-3. ngrok
-4. Ollama installed
-5. Git
-
-Verify:
+### Setup
+1. Clone this repository onto your server.
+2. Copy `.env.example` to `.env` and fill out your variables:
+   - `GITHUB_APP_ID`
+   - `GITHUB_WEBHOOK_SECRET`
+   - Data stores (`POSTGRES_PASSWORD`, etc.)
+3. Generate your GitHub App private key and place it in the root as `private-key.pem`.
+4. Start the stack:
 
 ```bash
-node --version
-docker --version
-docker compose version
-ngrok version
-ollama --version
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-Model pre-pull:
+The application will now be available on port `3000` (or `PORT` in your `.env`). The React frontend dashboard is fully integrated and served automatically at `/`. Point your reverse proxy (e.g., Nginx, Caddy) to port 3000!
 
-```bash
-ollama pull qwen3:8b
-```
+---
 
-For RTX 3050 6GB, `qwen3:8b` is usable but can be slow on long prompts. Keep fallback enabled (`AI_PROVIDER=auto`).
+## 🛠 Local Development Environment
 
-## Install
+If you'd like to tweak the code or build new features locally on Mac or Windows:
 
-```bash
-npm install
-cd flux-ui && npm install && cd ..
-```
+### Prerequisites
+- Node.js 20+
+- Docker Desktop
+- ngrok or an active smee.io URL
 
-## Environment
-
-Create `.env` at repo root from `.env.example` and fill values:
-
-```bash
-GITHUB_APP_ID=
-GITHUB_PRIVATE_KEY_PATH=./private-key.pem
-GITHUB_WEBHOOK_SECRET=
-API_KEY=
-
-POSTGRES_USER=flux
-POSTGRES_PASSWORD=flux_local_only_change_me
-POSTGRES_DB=flux
-DATABASE_URL=postgres://flux:flux_local_only_change_me@localhost:5432/flux
-REDIS_URL=redis://localhost:6379
-PORT=3000
-APP_TARGET_PORT=3001
-APP_TARGET_HOST=host.docker.internal
-APP_TARGET_BASE_URL=
-
-JOB_MAX_ATTEMPTS=3
-JOB_RETRY_DELAY_MS=5000
-DIFF_FETCH_TIMEOUT_MS=15000
-
-K6_VUS=50
-K6_DURATION=30s
-K6_TARGET_PATH=/api/health
-K6_TARGET_METHOD=GET
-
-OLLAMA_URL=http://localhost:11434
-OLLAMA_MODEL=qwen3:8b
-OLLAMA_TIMEOUT_MS=10000
-
-GROQ_API_KEY=
-GROQ_MODEL=qwen-qwq-32b
-GROQ_API_URL=https://api.groq.com/openai/v1/chat/completions
-AI_PROVIDER=auto
-```
-
-Do not commit secrets. `.env` and `private-key.pem` are ignored.
-
-## GitHub App Setup
-
-Create app in GitHub Developer Settings:
-
-1. App name: `Flux Chaos Reviewer`
-2. Permissions:
-   1. Checks: Read & Write
-   2. Pull requests: Read & Write
-   3. Contents: Read
-   4. Metadata: Read
-3. Events: `pull_request`, `check_run`
-4. Generate private key and place at `./private-key.pem`
-5. Install app on your test repo
-
-Branch protection on `main` must require status check name exactly:
-
-```text
-flux/chaos-review
-```
-
-## Start Infrastructure
-
+### 1. Start Infrastructure
 ```bash
 docker compose up -d
-docker compose ps
 ```
+*This command spins up the local dependencies: Redis, Postgres, and Ollama.*
 
-Services started:
+### 2. Install & Start Application
+Open 3 terminal windows from the repository root:
 
-1. Redis (`redis:7-alpine`)
-2. Postgres (`postgres:16-alpine`)
-3. Ollama (`ollama/ollama:latest`)
-
-Ports are bound to `127.0.0.1` only for safer local development.
-
-Pull model inside container if needed:
-
+**Terminal 1 (Backend API):**
 ```bash
-docker exec flux-ollama ollama pull qwen3:8b
-```
-
-## Run Application
-
-Terminal 1 (API server):
-
-```bash
+npm install
 npm run dev
 ```
 
-Terminal 2 (worker):
-
+**Terminal 2 (Worker Queue):**
 ```bash
 npm run worker
 ```
 
-Terminal 3 (frontend):
-
+**Terminal 3 (React UI):**
 ```bash
 cd flux-ui
+npm install
 npm run dev
 ```
 
-Health check:
-
+### 3. Webhook Proxy Setup
+Set up a [Smee.io](https://smee.io/) channel, put the URL in `WEBHOOK_PROXY_URL` in your `.env`, and run:
 ```bash
-curl http://localhost:3000/api/health
+npm run proxy
 ```
 
-## Expose Webhook with ngrok
+---
 
-```bash
-ngrok http 3000
-```
-
-Set GitHub App webhook URL to:
-
-```text
-https://<your-ngrok-domain>/webhooks/github
-```
-
-## AI Fallback Chain
-
-`worker/analyzer.js` uses this strategy:
-
-1. If `AI_PROVIDER=ollama`: Ollama only, then hard fallback object
-2. If `AI_PROVIDER=groq`: Groq only, then hard fallback object
-3. If `AI_PROVIDER=auto`:
-   1. Try local Ollama (timeout via `OLLAMA_TIMEOUT_MS`)
-   2. On error/timeout, try Groq
-   3. On failure, return structured fallback analysis
-
-Important: verdict logic never depends on LLM output. Verdict is always computed from measured P99 delta in `worker/runner.js`.
-
-## Smoke Test Checklist
-
-1. `curl http://localhost:3000/api/health` returns `{ "status": "ok" }`
-2. Open PR in test repo
-3. GitHub webhook delivery shows HTTP 202
-4. Worker logs stage progression
-5. Dashboard updates live via WS (`ws://localhost:3000/ws`)
-6. PR receives check run + comment
-7. Branch protection blocks merge on BLOCK verdict
+## 🤖 GitHub App Configuration
+1. Build a new App in GitHub Developer Settings.
+2. App name: `Flux Chaos Reviewer`
+3. Permissions required: 
+   - Checks: **Read & Write**
+   - Pull requests: **Read & Write**
+   - Contents: **Read**
+   - Metadata: **Read**
+4. Subscribed Events: `pull_request`, `check_run`
+5. Webhook URL: Your Live VPS domain (Prod) or Smee URL (Dev).
 
 ## Common Issues
-
-1. `docker` not found:
-   1. Install Docker Desktop
-   2. Restart shell and verify `docker --version`
-2. Webhook 401:
-   1. `GITHUB_WEBHOOK_SECRET` mismatch between GitHub App and `.env`
-3. Check run posts but merge not blocked:
-   1. Branch protection check name mismatch (`flux/chaos-review` must match exactly)
-4. k6 docker volume issues:
-   1. Ensure scripts are in `k6/`
-5. Ollama slow on laptop:
-   1. Use `AI_PROVIDER=auto` with Groq key set
-   2. Lower prompt size if needed
-
-## Notes
-
-1. Legacy `backend/`, `k8s/`, and `nginx/` stacks were intentionally removed.
-2. New canonical runtime is root `server/worker` architecture.
+- **`docker-compose.prod.yml` fails on Mac/Windows:** Production deployment relies on binding `/var/run/docker.sock`, which behaves differently on Mac/Windows Docker Desktop. It is highly recommended to use the 3-terminal `npm run dev` flow for local development, and reserve `docker-compose.prod.yml` purely for your Linux VPS.
+- **Webhook 401 Unauthorized:** Ensure `GITHUB_WEBHOOK_SECRET` perfectly matches your `.env` value.
+- **Branch Protection fails:** The required status check in your branch settings MUST be named exactly `flux/chaos-review`.

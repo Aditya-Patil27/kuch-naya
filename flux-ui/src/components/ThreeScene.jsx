@@ -212,6 +212,18 @@ export default function ThreeScene({ style }) {
       cancelAnimationFrame(animId)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('resize', onResize)
+      
+      scene.traverse((object) => {
+        if (object.geometry) object.geometry.dispose();
+        if (object.material) {
+          if (Array.isArray(object.material)) {
+            object.material.forEach(m => m.dispose());
+          } else {
+            object.material.dispose();
+          }
+        }
+      });
+      
       renderer.dispose()
       if (mount.contains(renderer.domElement)) {
         mount.removeChild(renderer.domElement)
