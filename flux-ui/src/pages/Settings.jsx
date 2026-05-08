@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { C, FONTS, cardBorder } from '../tokens'
 import { Toggle, PrimaryBtn, GhostBtn } from '../components/UI'
+import * as api from '../api'
 
 const RAMP_PROFILES = [
   {
@@ -38,15 +39,76 @@ const CHAOS_TOGGLES = [
 
 export default function Settings() {
   const [activeNav,  setActiveNav]  = useState('Load Testing')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  
+  // Settings state
   const [rampProfile, setRampProfile] = useState('staircase')
   const [chaos, setChaos] = useState({ latency:true, pod:true, packet:false })
   const [vus, setVus] = useState({ baseline:50, peak:500, soak:200 })
   const [confidence, setConfidence] = useState('MEDIUM')
-  const [saved, setSaved] = useState(false)
+  const [aiModel, setAiModel] = useState('qwen3:8b')
+  const [rateLimits, setRateLimits] = useState(null)
 
-  const handleSave = () => {
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  useEffect(() => {
+    api.getSettings()
+      .then(settings => {
+        if (settings.load_testing) {
+          if (settings.load_testing.rampProfile) setRampProfile(settings.load_testing.rampProfile)
+          if (settings.load_testing.vus) setVus(settings.load_testing.vus)
+        }
+        if (settings.chaos_scenarios) {
+          setChaos(settings.chaos_scenarios)
+        }
+        if (settings.ai_analyzer) {
+          if (settings.ai_analyzer.confidence) setConfidence(settings.ai_analyzer.confidence)
+          if (settings.ai_analyzer.model) setAiModel(settings.ai_analyzer.model)
+        }
+        setLoading(false)
+      })
+      .catch(err => {
+        setError(err.message)
+        setLoading(false)
+      })
+      
+    api.getRateLimits()
+      .then(data => setRateLimits(data))
+      .catch(() => setRateLimits(null))
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
+    
+    try {
+      await api.updateSetting('load_testing', { rampProfile, vus })
+      await api.updateSetting('chaos_scenarios', chaos)
+      await api.updateSetting('ai_analyzer', { model: aiModel, confidence })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleReset = () => {
+    setRampProfile('staircase')
+    setVus({ baseline: 50, peak: 500, soak: 200 })
+    setChaos({ latency: true, pod: true, packet: false })
+    setConfidence('MEDIUM')
+    setAiModel('qwen3:8b')
+  }
+
+  if (loading) {
+    return (
+      <div style={{ paddingTop:'56px', background:'#0D1117', minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}>
+        <div style={{ fontFamily: FONTS.mono, fontSize:'14px', color:C.muted }}>Loading settings...</div>
+      </div>
+    )
   }
 
   return (
@@ -86,6 +148,11 @@ export default function Settings() {
 
       {/* Main content */}
       <div style={{ flex:1, padding:'32px 36px', overflow:'auto' }}>
+        {error && (
+          <div style={{ marginBottom:'16px', padding:'12px 16px', background:'rgba(248,81,73,0.1)', border:`1px solid ${C.red}`, borderRadius:'6px' }}>
+            <span style={{ fontFamily:FONTS.mono, fontSize:'12px', color:C.red }}>{error}</span>
+          </div>
+        )}
         <div style={{ maxWidth:'720px' }}>
 
           {activeNav === 'Load Testing' && (
@@ -121,7 +188,7 @@ export default function Settings() {
                           {vus[key]}
                         </div>
                         <button
-                          onClick={() => setVus(v => ({ ...v, [key]: v[key]+10 }))}
+                          onClick={() => setVus(v => ({ ...v, [key]: v[key]+10) }))}
                           style={{ width:'36px', background:C.surfaceDeep, border:'none', color:C.text, fontSize:'16px', cursor:'pointer', flexShrink:0, transition:'background 0.15s' }}
                         >+</button>
                       </div>
@@ -219,19 +286,22 @@ export default function Settings() {
                 {/* 2×2 grid of selects */}
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'20px' }}>
                   {[
-                    { label:'Model',        opts:['llama3.2','codellama','mistral'] },
-                    { label:'Temperature',  opts:['0.1','0.3','0.5','0.7'] },
-                    { label:'Max Tokens',   opts:['2048','4096','8192'] },
-                    { label:'Report Style', opts:['Terse','Detailed','Executive'] },
+                    { label:'Model',        opts:['qwen3:8b','llama3.2','codellama','mistral'], value: aiModel, onChange: setAiModel },
+                    { label:'Temperature',  opts:['0.1','0.3','0.5','0.7'], value:'0.1', onChange:()=>{} },
+                    { label:'Max Tokens',   opts:['2048','4096','8192'], value:'2048', onChange:()=>{} },
+                    { label:'Report Style', opts:['Terse','Detailed','Executive'], value:'Detailed', onChange:()=>{} },
                   ].map(s => (
                     <div key={s.label}>
                       <div style={{ fontFamily:FONTS.heading, fontSize:'11px', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:C.muted, marginBottom:'8px' }}>{s.label}</div>
-                      <select style={{
-                        width:'100%', padding:'8px 12px',
-                        background:C.surface, border:`1px solid ${C.border}`, borderRadius:'6px',
-                        fontFamily:FONTS.mono, fontSize:'13px', color:C.text,
-                        cursor:'pointer',
-                      }}>
+                      <select 
+                        value={s.value} 
+                        onChange={e => s.onChange(e.target.value)}
+                        style={{
+                          width:'100%', padding:'8px 12px',
+                          background:C.surface, border:`1px solid ${C.border}`, borderRadius:'6px',
+                          fontFamily:FONTS.mono, fontSize:'13px', color:C.text,
+                          cursor:'pointer',
+                        }}>
                         {s.opts.map(o => <option key={o}>{o}</option>)}
                       </select>
                     </div>
@@ -269,20 +339,50 @@ export default function Settings() {
               <h2 style={{ fontFamily:FONTS.heading, fontSize:'18px', fontWeight:700, letterSpacing:'0.06em', color:C.text, marginBottom:'6px' }}>
                 {activeNav}
               </h2>
-              <div style={{ ...cardBorder(), padding:'40px', textAlign:'center' }}>
-                <div style={{ fontFamily:FONTS.mono, fontSize:'12px', color:C.muted }}>
-                  Configuration for <strong style={{ color:C.teal }}>{activeNav}</strong> coming soon.
+              
+              {activeNav === 'Access Control' && rateLimits && (
+                <div style={{ ...cardBorder(), padding:'24px' }}>
+                  <div style={{ fontFamily:FONTS.heading, fontSize:'12px', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:C.muted, marginBottom:'16px' }}>
+                    RATE LIMITS
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px' }}>
+                    {Object.entries(rateLimits).map(([key, value]) => (
+                      <div key={key} style={{ background:'#0D1117', padding:'16px', borderRadius:'8px', border:`1px solid ${C.border}` }}>
+                        <div style={{ fontFamily:FONTS.mono, fontSize:'11px', fontWeight:700, color:C.teal, marginBottom:'8px', textTransform:'uppercase' }}>
+                          {key}
+                        </div>
+                        <div style={{ fontFamily:FONTS.mono, fontSize:'10px', color:C.muted, marginBottom:'4px' }}>
+                          Max: {value.max} req
+                        </div>
+                        <div style={{ fontFamily:FONTS.mono, fontSize:'10px', color:C.muted' }}>
+                          Window: {value.windowMs / 1000}s
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {activeNav !== 'Access Control' && (
+                <div style={{ ...cardBorder(), padding:'40px', textAlign:'center' }}>
+                  <div style={{ fontFamily:FONTS.mono, fontSize:'12px', color:C.muted }}>
+                    Configuration for <strong style={{ color:C.teal }}>{activeNav}</strong> coming soon.
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           {/* Bottom action buttons */}
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:'28px' }}>
-            <PrimaryBtn onClick={handleSave} style={{ flex:1, marginRight:'12px', padding:'12px 0', textAlign:'center' }}>
-              {saved ? '✓ SAVED' : 'SAVE CHANGES'}
+            <PrimaryBtn 
+              onClick={handleSave} 
+              disabled={saving}
+              style={{ flex:1, marginRight:'12px', padding:'12px 0', textAlign:'center', opacity: saving ? 0.6 : 1 }}
+            >
+              {saving ? 'SAVING...' : saved ? '✓ SAVED' : 'SAVE CHANGES'}
             </PrimaryBtn>
-            <GhostBtn>RESET TO DEFAULTS</GhostBtn>
+            <GhostBtn onClick={handleReset}>RESET TO DEFAULTS</GhostBtn>
           </div>
         </div>
       </div>

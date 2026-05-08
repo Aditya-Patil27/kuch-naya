@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { C, FONTS, cardBorder } from '../tokens'
 import ThreeScene from '../components/ThreeScene'
 import { VerdictPill, StageBar, StatCard, SectionHeader, StatusDot } from '../components/UI'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 import { useJobs } from '../useJobs'
+import * as api from '../api'
 
 // Live elapsed counter component
 function ElapsedCounter({ startSecs }) {
@@ -35,10 +37,23 @@ function DeltaCell({ delta }) {
 export default function Dashboard({ setPage }) {
   const { jobs, activeJobs, completedJobs, blockedCount } = useJobs()
   const [nowMs, setNowMs] = useState(() => Date.now())
+  const [metrics, setMetrics] = useState(null)
+  const [metricsError, setMetricsError] = useState(null)
 
   useEffect(() => {
     const timer = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    api.getMetrics()
+      .then(data => {
+        setMetrics(data)
+        setMetricsError(null)
+      })
+      .catch(err => {
+        setMetricsError(err.message)
+      })
   }, [])
 
   const runs = useMemo(() => (
@@ -69,12 +84,17 @@ export default function Dashboard({ setPage }) {
     })
   ), [jobs, nowMs])
 
-  const counts = {
-    tested: completedJobs.length,
-    chaos: jobs.filter((j) => typeof j.p99_delta_pct === 'number').length,
-    blocked: blockedCount,
-    active: activeJobs.length,
-  }
+  const counts = useMemo(() => {
+    const tested = completedJobs.length
+    const chaos = jobs.filter((j) => typeof j.p99_delta_pct === 'number').length
+    const blocked = blockedCount
+    const active = activeJobs.length
+    
+    if (metrics?.deadLetterCount !== undefined) {
+      return { tested, chaos, blocked, active, deadLetter: metrics.deadLetterCount }
+    }
+    return { tested, chaos, blocked, active, deadLetter: 0 }
+  }, [completedJobs, jobs, blockedCount, activeJobs, metrics])
 
   return (
     <div style={{ paddingTop: '56px', background: '#0D1117', minHeight: '100vh' }}>
@@ -141,7 +161,7 @@ export default function Dashboard({ setPage }) {
                       <tr
                         key={r.id || `${r.pr}-${i}`}
                         className="tbl-row"
-                        onClick={() => setPage('job-detail')}
+                        onClick={() => setPage('job-detail', job.id)}
                         style={{
                           background: i % 2 === 1 ? 'rgba(0,0,0,0.15)' : 'transparent',
                           borderBottom: `1px solid ${C.border}`,
@@ -251,13 +271,26 @@ export default function Dashboard({ setPage }) {
             <span style={{ fontFamily:FONTS.heading, fontSize:'10px', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:C.muted, marginRight:'8px' }}>
               SYSTEM
             </span>
-            <StatusDot color={C.green}  label="Redis"       status="OPERATIONAL" />
-            <StatusDot color={C.green}  label="Worker Pool" status="12/16 ACTIVE" />
-            <StatusDot color={C.green}  label="Docker"      status="HEALTHY" />
-            <StatusDot color={C.amber}  label="Ollama API"  status="HIGH LOAD" />
-            <div style={{ marginLeft:'auto', fontFamily:FONTS.mono, fontSize:'11px', color:C.muted }}>
-              Cost/min: <span style={{ color:C.teal }}>$0.47</span>
-            </div>
+            <StatusDot 
+              color={metricsError ? C.red : C.green} 
+              label="API" 
+              status={metricsError ? 'ERROR' : 'OPERATIONAL'} 
+            />
+            <StatusDot 
+              color={metrics?.queue?.active ? C.green : C.muted} 
+              label="Queue Active" 
+              status={metrics?.queue?.active ?? 0} 
+            />
+            <StatusDot 
+              color={metrics?.queue?.waiting ? C.green : C.muted} 
+              label="Queue Waiting" 
+              status={metrics?.queue?.waiting ?? 0} 
+            />
+            <StatusDot 
+              color={C.green} 
+              label="Jobs Total" 
+              status={metrics?.jobsByStatus?.reduce((sum, s) => sum + s.count, 0) ?? 0} 
+            />
           </div>
         </div>
       </div>

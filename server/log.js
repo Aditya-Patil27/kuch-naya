@@ -40,6 +40,24 @@ function logError(message, meta = {}) {
   log('error', message, meta);
 }
 
+function auditLog(action, resourceType, resourceId, principal, success = true, details = {}) {
+  const auditEntry = {
+    ts: new Date().toISOString(),
+    level: 'audit',
+    action,
+    resourceType,
+    resourceId,
+    principal: principal ? {
+      id: principal.id || 'unknown',
+      role: principal.role || 'unknown',
+      tenantId: principal.tenantId || 'default',
+    } : null,
+    success,
+    ...safeMeta(details),
+  };
+  console.log(JSON.stringify(auditEntry));
+}
+
 function requestContext() {
   return (req, res, next) => {
     const requestId = req.header('x-request-id') || crypto.randomUUID();
@@ -57,14 +75,24 @@ function requestLogger() {
 
     res.on('finish', () => {
       const durationMs = Date.now() - start;
-      logInfo('http_request', {
+      const meta = {
         requestId: req.requestId,
         method: req.method,
         path: req.originalUrl,
         statusCode: res.statusCode,
         durationMs,
         ip: req.ip,
-      });
+      };
+      
+      if (req.principal) {
+        meta.principal = {
+          id: req.principal.id,
+          role: req.principal.role,
+          tenantId: req.principal.tenantId,
+        };
+      }
+      
+      logInfo('http_request', meta);
     });
 
     next();
@@ -77,4 +105,5 @@ module.exports = {
   logInfo,
   logWarn,
   logError,
+  auditLog,
 };

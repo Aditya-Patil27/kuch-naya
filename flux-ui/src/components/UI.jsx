@@ -183,10 +183,100 @@ export function GhostBtn({ children, onClick, style }) {
 }
 
 // ─── Primary Button ────────────────────────────────────────────────────
-export function PrimaryBtn({ children, onClick, style }) {
+export function PrimaryBtn({ children, onClick, style, disabled }) {
   return (
-    <button className="btn-primary-flux" onClick={onClick} style={{ padding:'10px 24px', ...style }}>
+    <button 
+      className="btn-primary-flux" 
+      onClick={onClick} 
+      disabled={disabled}
+      style={{ padding:'10px 24px', ...style, cursor: disabled ? 'not-allowed' : 'pointer' }}
+    >
       {children}
+    </button>
+  )
+}
+
+// ─── Confirmation Dialog ────────────────────────────────────────────────
+export function ConfirmationDialog({ 
+  isOpen, 
+  title = 'Confirm', 
+  message = 'Are you sure?', 
+  confirmLabel = 'Confirm', 
+  cancelLabel = 'Cancel', 
+  onConfirm, 
+  onCancel,
+  danger = false 
+}) {
+  if (!isOpen) return null
+  
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.6)',
+    }} onClick={onCancel}>
+      <div style={{
+        background: C.surface, border: `1px solid ${C.border}`,
+        borderRadius: '12px', padding: '24px', maxWidth: '400px',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontFamily: FONTS.heading, fontSize:'16px', fontWeight:700, color:C.text, marginBottom:'12px' }}>
+          {title}
+        </div>
+        <div style={{ fontFamily: FONTS.mono, fontSize:'13px', color:C.muted, marginBottom:'24px', lineHeight:1.6 }}>
+          {message}
+        </div>
+        <div style={{ display:'flex', gap:'12px', justifyContent:'flex-end' }}>
+          <button 
+            onClick={onCancel}
+            style={{
+              padding:'8px 16px', background:'transparent', border:`1px solid ${C.border}`,
+              borderRadius:'6px', color:C.muted, fontFamily:FONTS.mono, fontSize:'12px', cursor:'pointer',
+            }}
+          >
+            {cancelLabel}
+          </button>
+          <button 
+            onClick={onConfirm}
+            style={{
+              padding:'8px 16px', background: danger ? C.red : C.teal, 
+              border:'none', borderRadius:'6px', color:'#0D1117', 
+              fontFamily:FONTS.mono, fontSize:'12px', fontWeight:700, cursor:'pointer',
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Refresh Button ────────────────────────────────────────────────────
+export function RefreshButton({ onClick, loading, label = 'Refresh' }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '6px',
+        padding: '6px 12px',
+        background: 'transparent',
+        border: `1px solid ${C.border}`,
+        borderRadius: '6px',
+        color: loading ? C.muted : C.teal,
+        fontFamily: FONTS.mono,
+        fontSize: '11px',
+        cursor: loading ? 'not-allowed' : 'pointer',
+        opacity: loading ? 0.6 : 1,
+      }}
+    >
+      <span style={{ 
+        display: 'inline-block',
+        animation: loading ? 'spin 1s linear infinite' : 'none',
+        fontSize: '14px',
+      }}>↻</span>
+      {loading ? 'Refreshing...' : label}
     </button>
   )
 }

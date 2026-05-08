@@ -1,21 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts'
 import { C, FONTS, cardBorder } from '../tokens'
-import { VerdictPill, StageBar } from '../components/UI'
+import { VerdictPill, StageBar, RefreshButton } from '../components/UI'
 import { useJobs } from '../useJobs'
+import * as api from '../api'
 
 const FILTERS = ['ALL','ACTIVE','COMPLETED','FAILED','BLOCKED']
 const PAGE_SIZE = 10
-
-const DAILY_VOLUME = [
-  { day:'Mon', count:23 },
-  { day:'Tue', count:18 },
-  { day:'Wed', count:31 },
-  { day:'Thu', count:27 },
-  { day:'Fri', count:42 },
-  { day:'Sat', count:14 },
-  { day:'Sun', count:8  },
-]
 
 function ElapsedCounter({ startSecs }) {
   const [secs, setSecs] = useState(startSecs)
@@ -38,11 +29,35 @@ export default function JobsQueue({ setPage }) {
   const [search, setSearch] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [nowMs, setNowMs] = useState(() => Date.now())
+  const [stats, setStats] = useState(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => setNowMs(Date.now()), 1000)
     return () => clearInterval(timer)
   }, [])
+
+  useEffect(() => {
+    api.getJobStats()
+      .then(data => setStats(data))
+      .catch(() => setStats(null))
+  }, [])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      const [jobsData, statsData] = await Promise.all([
+        api.getJobs(),
+        api.getJobStats()
+      ])
+      // Jobs will be updated via WebSocket, but we can update stats
+      setStats(statsData)
+    } catch (err) {
+      // Silent fail for refresh
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   const allJobs = useMemo(() => (
     jobs.map((job) => {
@@ -118,6 +133,10 @@ export default function JobsQueue({ setPage }) {
           <p style={{ fontFamily:FONTS.mono, fontSize:'12px', color:C.muted, marginTop:'4px' }}>
             All chaos review jobs · Real-time status
           </p>
+        </div>
+
+        <div style={{ marginBottom:'16px' }}>
+          <RefreshButton onClick={handleRefresh} loading={refreshing} />
         </div>
 
         <div style={{ display:'grid', gridTemplateColumns:'1fr 280px', gap:'24px', alignItems:'start' }}>
@@ -203,11 +222,6 @@ export default function JobsQueue({ setPage }) {
                           <div className="progress-bar-fill" style={{ width:`${job.progress}%` }} />
                         </div>
                       )}
-                      <div style={{ marginTop:'10px' }}>
-                        <button className="btn-ghost-flux" style={{ padding:'4px 10px', width:'100%', textAlign:'center' }}>
-                          CANCEL
-                        </button>
-                      </div>
                     </div>
                   ))}
                 </div>
@@ -230,7 +244,7 @@ export default function JobsQueue({ setPage }) {
                   {pagedJobs.map((job, i) => (
                     <tr key={job.id} className="tbl-row"
                       style={{ background:i%2===1?'rgba(0,0,0,0.15)':'transparent', borderBottom:`1px solid ${C.border}`, animation:`fadeUp 0.35s ${i*0.04}s both` }}
-                      onClick={() => setPage('job-detail')}>
+                      onClick={() => setPage('job-detail', job.id)}>
                       <td style={{ padding:'10px 14px', fontFamily:FONTS.mono, fontSize:'12px', fontWeight:700, color:C.teal }}>{job.id}</td>
                       <td style={{ padding:'10px 14px', fontFamily:FONTS.mono, fontSize:'12px', color:C.text }}>{job.pr}</td>
                       <td style={{ padding:'10px 14px', fontFamily:FONTS.mono, fontSize:'11px', color:C.muted }}>{job.repo}</td>
@@ -293,10 +307,21 @@ export default function JobsQueue({ setPage }) {
               <div style={{ fontFamily:FONTS.heading, fontSize:'10px', fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:C.muted, marginBottom:'10px' }}>
                 WORST REGRESSION
               </div>
-              <div style={{ fontFamily:FONTS.mono, fontSize:'11px', color:C.teal, marginBottom:'4px' }}>PR #406</div>
-              <div style={{ fontFamily:FONTS.mono, fontSize:'10px', color:C.muted, marginBottom:'8px' }}>ui/dashboard</div>
-              <div style={{ fontFamily:FONTS.mono, fontSize:'24px', fontWeight:700, color:C.red }}>+347%</div>
-              <div style={{ fontFamily:FONTS.mono, fontSize:'10px', color:C.muted }}>P50 regression</div>
+              {stats?.worstRegression ? (
+                <>
+                  <div style={{ fontFamily:FONTS.mono, fontSize:'11px', color:C.teal, marginBottom:'4px' }}>PR #{stats.worstRegression.pr}</div>
+                  <div style={{ fontFamily:FONTS.mono, fontSize:'10px', color:C.muted, marginBottom:'8px' }}>{stats.worstRegression.repo}</div>
+                  <div style={{ fontFamily:FONTS.mono, fontSize:'24px', fontWeight:700, color:C.red }}>{stats.worstRegression.p50DeltaPct >= 0 ? '+' : ''}{stats.worstRegression.p50DeltaPct.toFixed(0)}%</div>
+                  <div style={{ fontFamily:FONTS.mono, fontSize:'10px', color:C.muted }}>P50 regression</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontFamily:FONTS.mono, fontSize:'11px', color:C.muted, marginBottom:'4px' }}>—</div>
+                  <div style={{ fontFamily:FONTS.mono, fontSize:'10px', color:C.muted, marginBottom:'8px' }}>No data</div>
+                  <div style={{ fontFamily:FONTS.mono, fontSize:'24px', fontWeight:700, color:C.muted }}>—</div>
+                  <div style={{ fontFamily:FONTS.mono, fontSize:'10px', color:C.muted }}>P50 regression</div>
+                </>
+              )}
             </div>
 
             {/* Daily volume bar chart */}
@@ -305,7 +330,7 @@ export default function JobsQueue({ setPage }) {
                 DAILY VOLUME
               </div>
               <ResponsiveContainer width="100%" height={140}>
-                <BarChart data={DAILY_VOLUME} margin={{ top:2, right:2, bottom:2, left:-30 }}>
+                <BarChart data={stats?.dailyVolume || []} margin={{ top:2, right:2, bottom:2, left:-30 }}>
                   <CartesianGrid stroke={C.border} strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="day" stroke={C.muted} tick={{ fontFamily:FONTS.mono, fontSize:10, fill:C.muted }} />
                   <YAxis stroke={C.muted} tick={{ fontFamily:FONTS.mono, fontSize:10, fill:C.muted }} />

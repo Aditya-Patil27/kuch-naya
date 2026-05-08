@@ -179,27 +179,3 @@ export const statCardBg = {
 }
 
 export const STAGES = ['QUEUED','PROVISIONING','RUNNING','CHAOS','ANALYZING','REPORTING','DONE']
-
-export const MOCK_RUNS = [
-  { pr: '#407', title: 'feat: N+1 query elimination for user feed', repo: 'core/api',       verdict: 'PASS',  p99: '+2ms',   delta: '+0.8%',  dur: '3m 45s', time: '2m ago' },
-  { pr: '#406', title: 'refactor: lazy-load comment thread widgets', repo: 'ui/dashboard',  verdict: 'BLOCK', p99: '+148ms', delta: '+62.4%', dur: '5m 12s', time: '8m ago' },
-  { pr: '#405', title: 'fix: connection pool exhaustion under load',  repo: 'core/db',      verdict: 'PASS',  p99: '-14ms',  delta: '-5.6%',  dur: '4m 08s', time: '15m ago' },
-  { pr: '#404', title: 'perf: async worker batching in task queue',   repo: 'workers/async',verdict: 'PASS',  p99: '+8ms',   delta: '+3.2%',  dur: '6m 34s', time: '23m ago' },
-  { pr: '#403', title: 'chore: upgrade k8s manifests to 1.29',        repo: 'infra/k8s',    verdict: 'WARN',  p99: '+24ms',  delta: '+9.7%',  dur: '3m 21s', time: '31m ago' },
-  { pr: '#402', title: 'feat: add Redis circuit breaker pattern',      repo: 'core/cache',   verdict: 'PASS',  p99: '-4ms',   delta: '-1.6%',  dur: '4m 52s', time: '48m ago' },
-]
-
-export const MOCK_ACTIVE_JOBS = [
-  { id: 'JOB-2847', pr: '#407', repo: 'core/api',      stage: 3, progress: 72, elapsed: 127 },
-  { id: 'JOB-2846', pr: '#408', repo: 'auth/sessions', stage: 1, progress: 34, elapsed: 46  },
-]
-
-export const MOCK_METRICS = [
-  { name: 'P50 Latency',    baseline: '42ms',  pr: '189ms', delta: '+347%', regressed: true },
-  { name: 'P99 Latency',    baseline: '94ms',  pr: '242ms', delta: '+157%', regressed: true },
-  { name: 'Error Rate',     baseline: '0.02%', pr: '2.8%',  delta: '+13900%', regressed: true },
-  { name: 'Throughput',     baseline: '1240',  pr: '1198',  delta: '-3.4%', regressed: false },
-  { name: 'DB Connections', baseline: '48',    pr: '312',   delta: '+550%', regressed: true },
-  { name: 'Memory Usage',   baseline: '312MB', pr: '338MB', delta: '+8.3%', regressed: false },
-  { name: 'CPU Usage',      baseline: '34%',   pr: '39%',   delta: '+14.7%', regressed: false },
-]

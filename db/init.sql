@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS jobs (
   p99_delta_pct REAL,
   findings JSONB,
   check_run_id BIGINT,
+  stage INTEGER DEFAULT 0,
+  progress INTEGER DEFAULT 0,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   completed_at TIMESTAMPTZ
 );
@@ -90,3 +92,18 @@ CREATE INDEX IF NOT EXISTS idx_runner_tokens_hash ON runner_tokens(token_hash);
 CREATE INDEX IF NOT EXISTS idx_runners_tenant_id ON runners(tenant_id, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_runners_token_hash ON runners(token_hash);
 CREATE INDEX IF NOT EXISTS idx_dead_letter_moved_at ON dead_letter_jobs(moved_at DESC);
+
+-- Settings table for persisted configuration
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_by TEXT
+);
+
+-- Default settings
+INSERT INTO settings (key, value) VALUES 
+  ('load_testing', '{"vus": {"baseline": 50, "peak": 500, "soak": 200}, "rampProfile": "staircase"}'),
+  ('chaos_scenarios', '{"latency": true, "pod": true, "packet": false}'),
+  ('ai_analyzer', '{"model": "qwen3:8b", "temperature": 0.1, "maxTokens": 2048, "reportStyle": "Detailed", "confidence": "MEDIUM"}')
+ON CONFLICT (key) DO NOTHING;

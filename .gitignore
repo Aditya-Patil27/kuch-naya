@@ -42,6 +42,10 @@ build/
 notes/
 drafts/
 
+# Development docs
+README.md
+RUN_FLOW.md
+
 # OS/editor
 .DS_Store
 Thumbs.db

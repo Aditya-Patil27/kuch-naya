@@ -3,6 +3,9 @@ import { C, FONTS } from '../tokens'
 const PAGES = [
   { id: 'dashboard',  label: 'Dashboard'  },
   { id: 'jobs',       label: 'Job Queue'  },
+  { id: 'dead-letter', label: 'Dead Letter' },
+  { id: 'runners',    label: 'Runners'    },
+  { id: 'tenants',    label: 'Tenants'    },
   { id: 'settings',   label: 'Settings'   },
   { id: 'pr-preview', label: 'PR Preview' },
 ]

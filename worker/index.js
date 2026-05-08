@@ -32,8 +32,8 @@ function stageToIndex(stage) {
     baseline: 2,
     toxiproxy: 3,
     chaos: 4,
-    cleanup: 5,
-    analyze: 5,
+    cleanup: 5,   // runs concurrently with analyze (both map to stage 5)
+    analyze: 5,   // runs concurrently with cleanup (both map to stage 5)
     report: 6,
   };
   return map[stage] ?? 0;
@@ -59,6 +59,8 @@ queue.process(workerConcurrency, async (job) => {
          attempt_count = GREATEST(attempt_count, $2),
          run_mode = $3,
          shard_count = $4,
+         stage = 1,
+         progress = 10,
          dead_letter_reason = NULL
      WHERE id = $1`,
     [payload.id, attemptCount, runMode, shardCount]
@@ -75,11 +77,19 @@ queue.process(workerConcurrency, async (job) => {
 
   try {
     const result = await runJob(payload, async (stage, meta = {}) => {
+      const stageIdx = stageToIndex(stage);
+      const prog = meta.progress ?? 0;
+      
+      await pg.query(
+        `UPDATE jobs SET stage = $2, progress = $3 WHERE id = $1`,
+        [payload.id, stageIdx, prog]
+      );
+      
       await publish('job:stage', {
         id: payload.id,
         status: 'running',
-        stage: stageToIndex(stage),
-        progress: meta.progress ?? 0,
+        stage: stageIdx,
+        progress: prog,
       });
     });
 
@@ -99,6 +109,8 @@ queue.process(workerConcurrency, async (job) => {
            findings = $6::jsonb,
            run_mode = $7,
            shard_count = $8,
+           stage = 6,
+           progress = 100,
            completed_at = NOW()
        WHERE id = $1`,
       [
@@ -174,7 +186,9 @@ queue.on('failed', (job, err) => {
          SET status = 'dead-letter',
              dead_letter_reason = $2,
              last_error = $2,
-             failed_at = NOW()
+             failed_at = NOW(),
+             stage = -1,
+             progress = 0
          WHERE id = $1`,
         [jobId, String(err.message || 'unknown error').slice(0, 2000)]
       );

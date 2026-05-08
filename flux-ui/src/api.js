@@ -47,3 +47,63 @@ export function wsUrl(wsToken) {
 
   return ws.toString();
 }
+
+export function getMetrics() {
+  return request('/api/metrics');
+}
+
+export function getDeadLetterJobs() {
+  return request('/api/jobs/dead-letter');
+}
+
+export function retryJob(id) {
+  return request(`/api/jobs/${id}/retry`, { method: 'POST' });
+}
+
+export function getTenants() {
+  return request('/api/tenants');
+}
+
+export function createTenant(data) {
+  return request('/api/tenants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+}
+
+export function getRunners() {
+  return request('/api/runners');
+}
+
+export function getJobStats() {
+  return request('/api/jobs/stats');
+}
+
+export function getSettings() {
+  return request('/api/settings');
+}
+
+export function updateSetting(key, value) {
+  return request(`/api/settings/${key}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value }),
+  });
+}
+
+export function deleteJob(id) {
+  return request(`/api/jobs/${id}`, { method: 'DELETE' });
+}
+
+export function deleteTenant(id) {
+  return request(`/api/tenants/${id}`, { method: 'DELETE' });
+}
+
+export function deleteRunner(id) {
+  return request(`/api/runners/${id}`, { method: 'DELETE' });
+}
+
+export function deleteSetting(key) {
+  return request(`/api/settings/${key}`, { method: 'DELETE' });
+}
+
+export function getRateLimits() {
+  return request('/api/config/rate-limits');
+}
